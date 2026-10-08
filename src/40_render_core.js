@@ -23,6 +23,12 @@
 //   'perf:quality' { pixelRatio, reason }), R.feedFrames(ms[]) (tests), R.perfState() = GG.debug('perf') { mode, cap,
 //   ticks, rendered, pixelRatio, autoRatio, want, quality, covered, p95, applied, shaderChecks, voices, drops, tapDrops,
 //   voiceCap }, shader error checks only under automation or ?debug=1, R.util.freeze / thaw + ctx.freeze (static props).
+// v1.5 "Desktop" (Lane W, plan_contract_1.5 §4.6), PC layout only (html.gg-wide, GG.ui.wide()): setViewInsets takes left /
+//   right too (default 0) and fitCamera fits the room into W - left - right, centred there; the landscape squeeze of the
+//   bottom inset (a phone on its side) is skipped, so the room stays in view above a wide bottom panel; the pixel ratio is
+//   capped by GG.prefs.pxBudget(w, h, true) (<= 2.4 MP drawn; debug('render').pxBudget, null when not wide). 'ui:wide'
+//   re-applies the ratio and re-frames the scene. debug('render').insets gains left / right only in the PC layout (the
+//   phone fixtures keep { top, bottom }).
 (function (GG) {
   var R = GG.render = GG.render || {};
   var THREE = null;                       // resolved in init(); the CDN script may be missing
@@ -47,7 +53,14 @@
     return PREFS;
   };
   function devRatio() { return (typeof window !== 'undefined' && window.devicePixelRatio) || 1; }
-  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio()); }
+  // v1.5: the PC layout (html.gg-wide) and its pixel budget (Infinity on a phone / tablet / narrow window: today's ratio)
+  function wideNow() { return !!(GG.ui && GG.ui.wide && GG.ui.wide()); }
+  function pxCap() {
+    if (!wideNow() || !GG.prefs || !GG.prefs.pxBudget || typeof window === 'undefined') return Infinity;
+    var w = (container && container.clientWidth) || window.innerWidth || 1, h = (container && container.clientHeight) || window.innerHeight || 1;
+    return GG.prefs.pxBudget(w, h, true);
+  }
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio(), pxCap()); }
   R.applySettings = function () {
     var was = R.available && renderer ? renderer.getPixelRatio() : null;
     PREFS = null; R.prefs();
@@ -58,6 +71,13 @@
   if (GG.on) GG.on('settings:changed', function (p) {
     var k = (p && p.keys) || [];
     if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
+  });
+  // v1.5: the PC layout came or went: its pixel budget, and the room / stage re-framed for the new insets rule
+  if (GG.on) GG.on('ui:wide', function () {
+    if (!R.available || !renderer) return;
+    var was = renderer.getPixelRatio();
+    needsResize = true; applyResize(); invalidate(2);
+    if (renderer.getPixelRatio() !== was) GG.emit('perf:quality', { pixelRatio: renderer.getPixelRatio(), reason: 'layout' });
   });
   // Pure: the next 'auto' pixel ratio from the current one, the frame-cost p95 (ms) and how long (ms) that p95 has stayed in
   // its band: > 20 ms held 2 s steps down (1.5 -> 1.25 -> 1.0), < 12 ms held 4 s steps back up; anything else keeps it.
@@ -83,7 +103,7 @@
   var cur = null, curName = 'none';
   var paused = false, rafId = 0, lastTs = 0, clock = 0, frames = 0;
   var W = 1, H = 1, needsResize = true, contextLost = false;
-  var insets = { top: 56, bottom: -1 };   // bottom -1 = default (30% of the height, where UI sheets sit)
+  var insets = { top: 56, bottom: -1, left: 0, right: 0 };   // bottom -1 = default (30% of the height, where UI sheets sit); v1.5 left / right
   var lastState = null;
   var drawCalls = 0, triangles = 0;
   var labels = [];                        // every label sprite made by makeLabel (rescaled on resize)
@@ -223,6 +243,8 @@
     o = o || {};
     if (typeof o.top === 'number') insets.top = Math.max(0, o.top);
     if (typeof o.bottom === 'number') insets.bottom = o.bottom;
+    if (typeof o.left === 'number') insets.left = Math.max(0, o.left);     // v1.5
+    if (typeof o.right === 'number') insets.right = Math.max(0, o.right);
     if (R.available && cur && cur.resize) { cur.resize(W, H, true); invalidate(2); }
   };
 
@@ -467,16 +489,17 @@
     camera.clearViewOffset(); camera.updateProjectionMatrix();
     var pad = o.pad == null ? 14 : o.pad, top = insets.top;
     var bottom = insets.bottom < 0 ? Math.round(H * 0.3) : insets.bottom;
-    if (W > H) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape: little room for sheets
+    var wide = wideNow(), left = Math.min(insets.left, W / 2), right = Math.min(insets.right, W / 2), bandW = Math.max(80, W - left - right);
+    if (W > H && !wide) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape (a phone on its side): little room for sheets
     var bandH = Math.max(80, H - top - bottom);
     var lo = 1, hi = 150, box = measureBox;
     for (var i = 0; i < 26; i++) {
       var mid = (lo + hi) / 2;
-      if (measure(mid, o.points) && box.w <= W - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
+      if (measure(mid, o.points) && box.w <= bandW - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
     }
     measure(hi, o.points);
     rig.goalDist = hi;
-    rig.goalOffX = (box.x0 + box.x1) / 2 - W / 2;
+    rig.goalOffX = (box.x0 + box.x1) / 2 - (left + bandW / 2);
     rig.goalOffY = (box.y0 + box.y1) / 2 - (top + bandH / 2);
     if (!o.animate || rig.snap) { rig.dist = rig.goalDist; rig.offX = rig.goalOffX; rig.offY = rig.goalOffY; rig.snap = false; }
     applyRig(rig.target.x, rig.target.y, rig.target.z);
@@ -2241,7 +2264,11 @@
   // 41_render_garage.js adds scene fields through the scene's debug(); only this module registers 'render'.
   GG.registerDebug('render', function () {
     var d = { available: R.available, scene: cur ? curName : 'none', paused: paused, frames: frames, drawCalls: drawCalls, triangles: triangles };
-    if (R.available) { d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom }; }
+    if (R.available) {
+      d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom };
+      if (wideNow()) { d.insets.left = insets.left; d.insets.right = insets.right; }   // v1.5 (the phone fixtures keep { top, bottom })
+    }
+    var cap = pxCap(); d.pxBudget = isFinite(cap) ? Math.round(cap * 1000) / 1000 : null;   // v1.5
     if (cur && cur.debug) { var x = cur.debug(); for (var k in x) d[k] = x[k]; }
     return d;
   });

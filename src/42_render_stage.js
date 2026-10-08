@@ -6,6 +6,8 @@
 //   setup({ venue: GIG|venue|kind, crowd: attendance, members, flags, genre, player, bpm })
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
+//   v1.5 "Desktop" (Lane W): in the PC layout (html.gg-wide) the horizontal field of view is capped at 100 degrees (a very
+//   wide window would bend the room); info().hFov / vFov (degrees). Phones frame exactly as before.
 //   v0.7.2 kick2(): a double kick's second hit (the left foot on the double pedal, the kick shell pulses); info().kick2s
 //   v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): setup({ ..., seat, lineup }) (defaults: state.seat || 'drums',
 //   GG.career.lineup(state)). Drums = the v0.3 behind-the-kit camera, unchanged. A string seat (your own band; a rival set
@@ -1256,6 +1258,14 @@
       if (sd && sd.sings) K.mics.push(sd.id);   // v1.1: the boom mic is theirs
       copyPose(K.drummer.L.cur, poses.snare.up); copyPose(K.drummer.R.cur, poses.hat.up);
     }
+    function you2d() {   // v1.5 review (pw_wide): screen y of your seat's head / torso / seat, null for the spectator camera
+      var view = camView(), H = ctx.size().h, v = new THREE.Vector3(), out = {};
+      if (view === 'spectator') return null;
+      var at = view === 'spot' && K.you ? [K.you.bx, K.you.bz, [['head', 1.55], ['torso', 1.15], ['seat', 0.75]]] : [0, KZ + THRONE_Z, [['head', 1.35], ['torso', 1.0], ['seat', KIT.throne[1]]]];
+      ctx.camera.updateMatrixWorld(); ctx.camera.updateProjectionMatrix();
+      at[2].forEach(function (p) { v.set(at[0], K.hs + p[1], at[1]).project(ctx.camera); out[p[0]] = Math.round((1 - v.y) / 2 * H); });
+      return out;
+    }
     function copyPose(out, p) { for (var i = 0; i < 6; i++) out[i] = p[i]; }
     function seatDrummer(D) {
       var m = null, i;
@@ -1474,10 +1484,13 @@
       var bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
-      var tFull = tb * H / bandH;
+      var tFull = tb * H / bandH, zk = 1;
+      if (GG.ui && GG.ui.wide && GG.ui.wide()) { var tU = tFull; tFull = Math.min(tFull, Math.tan(50 * Math.PI / 180) * H / W); zk = tU / tFull; }   // v1.5: hFov <= 100 deg (PC layout); zk > 1 = zoomed in
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
       if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
-      camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
+      // v1.5 review: when the hFov cap zooms in (PC layout only), pin the band's bottom edge (your kit / spot) to the frame's
+      // bottom and crop the overflow at the top (behind the song header), so the band never drops in behind the highway.
+      camOffY = Math.round(H / 2 - (zk > 1.001 ? top + bandH - zk * bandH / 2 : top + bandH / 2)); camFov = cam.fov;
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();
       var hs = K ? K.hs : 0;
@@ -2176,7 +2189,9 @@
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
             fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
-          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)),   // v0.8
+          you2d: you2d(),   // v1.5 review: your seat's screen y (CSS px): kit camera = the drummer, spot = your player
+          vFov: +ctx.camera.fov.toFixed(1), hFov: +(2 * Math.atan(Math.tan(ctx.camera.fov * Math.PI / 360) * ctx.camera.aspect) * 180 / Math.PI).toFixed(1) };   // v1.5
       }
     };
     return shell;

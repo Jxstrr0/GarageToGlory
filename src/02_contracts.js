@@ -549,6 +549,61 @@
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
 
   /* ======================================================================
+   V1.5 DESKTOP (plan/plan_contract_1.5.md §4; status.md Addendum 8, owner K1-K4 + Q1-Q3; SAVE_SCHEMA stays 10: no career key,
+   save codes + HoF backups unchanged; three optional settings, defaulted in GG.prefs.normalize only, never written until changed)
+   Phone law: at 390x844 / 440x956 / 844x390 (phone contexts) the game is v1.4's: every desktop feature is gated on an <html>
+   class (gg-wide = the PC layout, gg-desk = fine pointer + hover, gg-keys = playing on keys, gg-kbnav = the focus-ring mode),
+   none set on a phone before a real key press (GG.input.real). Proof: tests/pw_freeze.js (fixtures tests/fixtures/
+   phone_freeze_390 / _440 / _844l.json, recorded on 1.4.0.0) + every existing pw test + tools/phoneqa.js; tests/wide_css.test.js
+   (5w selectors start html.gg-wide / html.gg-desk; 50k selectors html.gg-kbnav / html.gg-wide; elsewhere only as html.<class>).
+   Settings (global gg.v1.settings; GG.save DEFAULT_SETTINGS unchanged):
+     keymap  { drums?: [6 codes by C.LANES role], strings?: [6 codes by pitch slot, low -> high; slot 4 = the 5th of 6, slot 5 =
+             the top] } ; KeyboardEvent.code (physical keys). Only a changed kind is stored; get() fills defaults per kind (an
+             invalid / duplicate / reserved / short list -> that kind's default).
+     calibKb { speaker, headphones } = prof() { audio, visual, at, vat } (ms; at = the key click test ran, vat = the key light check)
+     layout  'auto' | 'phone' | 'wide' (Settings > Look + feel "Layout"; auto = PC layout on a computer >= 1000x560, w >= 1.2 h)
+   GG.prefs (11_settings, pure): KEY_KINDS ['drums','strings'] ; KEY_DEFAULTS { drums: [Space KeyD KeyF KeyS ShiftLeft KeyA]
+     (Q1: kick snare hats crash toms ride), strings: [KeyA KeyS KeyD KeyF ShiftLeft Space] (Q2) } ; KEY_RESERVED (+ keyReserved
+     (code)) ; CLASSIC_KEYS (the v1.4 55:60 table: code-less events + the hidden J K L G H extras) ; LAYOUTS ;
+     keyKind(seat) ; keySlot(kind, lane, lanes) ; keysFor(s, kind, lanes) -> [code per lane] ;
+     keyLane(s, kind, lanes, code, key) -> { lane } (-1 = bound in this kind, off this rig: swallowed) | { col } (v1.4 column,
+       55 mirrors it for lefty) | null ; codeOf(key) ; bindKey(s, kind, slot, code) -> { keymap, swapped: slot|null,
+       refused: 'reserved'|'invalid'|null } (a same-kind conflict swaps) ; resetKeys(s, kind) -> keymap ;
+     keyLabel(code, layoutMap?, learned?) (layout map > learned > the code: KeyA -> A, Digit1 -> 1, ShiftLeft -> Shift) ;
+     calibFor(s, 'touch'|'keys') -> { audio, visual, visM } ms (keys: audio from calibKb when its at > 0, visual + visM from
+       calibKb when its vat > 0, else the touch profile's) ; offsets(s?, input?) -> { audio, visual, visM } s (no input = touch,
+       as v1.4 + visM) ; setCalib(profile, o, input?) ('keys' -> calibKb; at only with audio, vat only with visual; no input =
+       v1.4 exactly) ; layoutFor(w, h, desk, pref) ; pxBudget(w, h, wide) -> sqrt(2.4e6 / (w h)) when wide, else Infinity.
+   GG.input (50b_ui_input, DOM): real(ev) ; mode() 'keys'|'touch' ; desk() ; kbSeen() ; learned() ; wide() ; showKeyUI() ;
+     layoutPref() ; capture(fn) -> release() (one exclusive slot: fresh trusted keydowns only) ; captured() ; gigLive(on?).
+     GG.ui.wide() -> bool. Events 'input:mode' { mode }, 'ui:wide' { wide } (never while gigLive()).
+   Lanes (plan §4.3-§4.7): 55 gig keys (G.kind / G.keymap / G.input / G.offT / G.offK / G.caps frozen at count-in; window capture
+     keydown + keyup; releaseAll; blur -> pause(false) on keys; Esc pause / resume; 600 ms card arm; keycaps; gig-keys, gig-pause-keys,
+     gig-hint) ; 5h Settings > Keys (#set-keys) + Layout seg + key calibration (calib-input-touch|keys) ; 50k_ui_keys menu router
+     (KEY_BACK, gg-kbnav ring, kb-spots, kb-hints) + 50_ui_core focus manager (def.back / focus / hints, focusDefault) ; 54 grid
+     keys ; 5w_ui_wide (package B "Centred wide column" CSS, injected last) + 40 / 42 / 60 framing (insets left / right, pxBudget).
+   Test ids (new): set-keys, set-keys-kind-drums|strings, set-key-<drums|strings>-<0..5>, set-keys-msg, set-keys-pos,
+     set-keys-reset, set-keys-timing, set-calibrate-keys, set-keys-sticky, set-layout-auto|phone|wide, calib-input-touch|keys,
+     gig-keys, gig-keys-change, gig-pause-keys, gig-hint, kb-spots, kb-hs-<action>, kb-hints (never hs-*).
+   Debug: input { mode, desk, wide, layout, kbSeen, kbnav, live, captured, learned: n, lastReal } ; keys { top, focus, opener,
+     lastEsc, nav, swallowed: { repeat, stale } } ; gigui += keys { kind, map, input, caps, down, held, last }, keyTaps,
+     keySwallowed, lostKeyups ; render += insets.left / right, pxBudget ; calib += input.
+   As merged (lanes I -> N -> W + lead, 2026-10-08; lane reports plan/v15_lane_<i|n|w>_report.md, plan/v15_integration_report.md):
+     55: ui.keyLabel(code) (getLayoutMap -> learned -> code), ui.kcap(text) (the shared keycap, CSS .kcap in #gg-gigkeys-css);
+       debug('gigui') also cardRej, cardAge (ms since a card appeared), restart, off / offT / offK (ms), visM, laneW, hitY, hwW,
+       hwH, gemW, look, wide, keys.labels. The PC-layout stage frame runs to 0.1 of the highway (the kit just above it).
+     5h: debug('calib') += input ('touch'|'keys'), capturing. Test ids set-rail-<section> (the Settings rail), set-layout.
+     50k / 50: ui.setKbnav(on), ui.keyBack(), ui.kbnav(), ui.focusDefault(id?), ui.defaultFocus(el), ui.focusEl(n, { nav,
+       preventScroll }), ui.focusAt, ui.isTyping(n), ui.reachable(n), ui.noFocus(id), ui.openerOf(), ui.syncHints(), ui.w2(node,
+       nLeft), ui.walkToSpot(action); screen defs { back, focus, hints, focus: false }; event 'ui:kbnav' { on }; debug('keys')
+       += kbnav. 54: ui.seqDirty(), debug('seq').dirty / kbFocus; 51 / 5j: ui.creatorDirty(), ui.lookDirty(). Test ids seq-side,
+       side-* (the songwriter tools column).
+     5w / 40 / 42 / 60: R.setViewInsets({ left, right }); debug('render').pxBudget (null off-wide) and insets.left / right (only
+       when wide; the stage-0 fixtures pin { top, bottom }); 'perf:quality' reason 'layout' on 'ui:wide'; R.stage.info().hFov /
+       vFov (hFov <= 100 when wide); debug('wide').
+  ====================================================================== */
+
+  /* ======================================================================
    V1.4 TUNING (status.md Addendum 7, owner picks M1-M3; plan/v14/; build report plan/v14/build_report.md). Numbers only, no new
    feature, no new state key, no new GIG_RESULT field (SAVE_SCHEMA stays 10; old saves load as they are).
    M1 "Gigs pay, side jobs less" (content/economy.js; every value below is content):

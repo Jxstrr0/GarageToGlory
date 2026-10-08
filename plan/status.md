@@ -23,15 +23,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.4.0.0** "Tuning" (PR #26, merged 2026-10-07) = 1.3.1.0 +
-  the money pass (Addendum 7 M1-M3: `plan/v14/build_report.md`, `plan/v14/probe_after.md`, `plan/v14/integration_report.md`).
-  See "What's in v1.4" / "What's in v1.3.1" below. **Update Current/Next at every merge.**
+- Current: **1.5.0.0** "Desktop" (shipped 2026-10-08, owner check: ship; `plan/v15_integration_report.md`, review fixes
+  in its section 7) = 1.4.0.0 + keyboard play, menus on the keyboard and the PC layout (Addendum 8).
+  See "What's in v1.5". **Update Current/Next at every merge.**
+- Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
+  gaps): Drum kit / Gear shop labels touch at 1280x720 with the planner open; PC gig score card; keycap legends in panel
+  footers; calibration progress dots; Settings rail follow; songwriter lane icons clipped; size +92 KB over the +60 KB soft budget.
+- IGNORE: the owner's 2026-10-08 "engine market / buyers" message was sent to the wrong chat. It is not this game; never build it.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26).
-- Next: **1.4 owner check + review + PR** (440x956 shots in the verifier's scratch `v14_owner/`). Still open from v1.3
-  (`plan/v13_integration_report.md` §8, not part of the owner's money picks): per-chord thirds, slider-song career balance.
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop.
+- Next: owner check of 1.5 (one popup: ship / tweak; shots `scratchpad/v15_owner/`), review (3 lenses), PR to `main`. Still
+  open from v1.3 (`plan/v13_integration_report.md` §8): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -135,6 +139,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.5 "Desktop" (Addendum 8; contract `plan/plan_contract_1.5.md`; lanes I, N, W + lead on `v1.5-desktop` 2026-10-08)
+- **Gig keys** (55, Lane I): physical keys (`KeyboardEvent.code`), default drums Space kick / D snare / F hats / S crash /
+  Shift toms / A ride, strings A S D F (+ Space top on 5, Shift 5th + Space top on 6); rebindable in Settings > Keys (two maps:
+  kit + strings); keycaps on the lanes; same judge + windows as touch; key calibration (`calibKb`, click test + light check);
+  Esc pause, focus lost = frozen pause on keys; 600 ms card arm; v1.4 J K L G H keys kept as hidden extras.
+- **Menus on the keyboard** (50k router + 50 focus manager, Lane N): Enter/Space confirm, Esc back/close, arrows/Tab move
+  (focus ring only in `gg-kbnav`), digits 1-8 walk the garage (kb-spots), songwriter grid keys, "Leave without saving?" asks.
+- **PC layout B "Centred wide column"** (5w CSS + 40/42/60, Lane W): Auto on a computer >= 1000x560 and wider than 1.2 x
+  tall (Settings Layout: Auto / Phone / PC); wide bottom panels with two columns, centred full screens, songwriter tools | grid,
+  Settings rail, docked key calibration, a wider highway under the stage, 2.4 MP pixel budget at 1920 dpr 2.
+- **Phones unchanged**: everything gated on `html.gg-wide / gg-desk / gg-keys / gg-kbnav`; `pw_freeze` equal at 390 / 440 /
+  844x390. Note: `META_ONLY=all` runs nothing in `pw_freeze`; use `META_ONLY=390,440,844l` (or none).
 
 ## What's in v1.4 "Tuning" (Addendum 7; build `plan/v14/build_report.md`; on `v1.4-tuning` 2026-10-06/07)
 - **M1 "Gigs pay, side jobs less"** (content numbers): start fund $450 (was $300); tier-1 rooms pay x1.6 but never more than
@@ -467,9 +484,21 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - K4 Fairness: **same rules** for keys and touch (same timing windows and grades) + a keyboard lag calibration step.
 - Method: plan + PC mockups first (owner picks), then build; phone layouts at 390x844 / 440x956 must not change.
 
+- Plan popup (2026-10-07, all recommended): **Q1 drum keys "strong fingers"** (Space kick, D snare, F hats, S crash, Shift toms,
+  A ride); **Q2 string keys** A S D F for strings 1-4, 5 strings: Space = top, 6 strings: Shift = 5th + Space = top; **Q3 PC
+  look B "Centred wide column"** (`plan/v15_desktop_mockup.html?opt=B`, `_B.png`): menus in 2-3 columns, wider highway under
+  the stage; phones unchanged.
+
 ## Addendum 8 — pending
-- [ ] plan `plan/plan_contract_1.5.md` + PC mockups -> owner popup
-- [ ] build, verify (phone matrix unchanged + new desktop sizes), review, owner check, PR
+- [x] plan `plan/plan_contract_1.5.md` (4 readers, writer, mockups, critic: 1 blocker + 8 majors applied) -> owner popup (2026-10-07)
+- [x] stage 0 (2026-10-07, `plan/v15_stage0_report.md`): phone freeze FIRST on the untouched 1.4.0.0 tree (`tools/phone_freeze.js`
+  -> `tests/fixtures/phone_freeze_390 / _440 / _844l.json`, `tests/pw_freeze.js`; a fixture change needs the lead + a reason logged
+  here), §2 re-audit, VERSION 1.5.0.0, 02 V1.5 block, 11 keys / calibKb / layout, `GG.input` (50b), `_pw` desktop, `keys.test`,
+  `wide_css.test`; package A deleted from the contract (B is the build)
+- [x] lanes I, N, W (2026-10-08, reports `plan/v15_lane_<i|n|w>_report.md`) -> merged I -> N -> W on `v1.5-desktop`, hand-overs
+  applied (02 "As merged", stage frame 0.1, songwriter grid column), phone matrix + desktop sizes verified, owner shots
+  (`plan/v15_integration_report.md`)
+- [ ] review (3 lenses) -> owner check (ship / tweak) -> PR to `main`
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
@@ -478,6 +507,12 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.5 as merged** (lanes I -> N -> W + lead, 2026-10-08; full list in `02_contracts.js` V1.5 DESKTOP + "As merged"):
+  `GG.input` (real, mode, desk, kbSeen, learned, wide, showKeyUI, layoutPref, capture, gigLive; events 'input:mode', 'ui:wide');
+  settings keymap / calibKb / layout (`P.keyLane`, `P.setCalib(.., 'keys')`, `layoutFor`, `pxBudget`); 55 `ui.keyLabel`,
+  `ui.kcap`; 50/50k `ui.setKbnav`, `keyBack`, `focusDefault`, `focusEl`, `noFocus`, `w2`, `walkToSpot`, screen defs
+  `{ back, focus, hints }`, event 'ui:kbnav'; 54/51/5j `seqDirty / creatorDirty / lookDirty`; 40 `setViewInsets({ left, right })`;
+  debug input / keys / gigui keys / render pxBudget + insets / calib input / wide.
 - **v1.3 as merged** (lanes S -> A -> U + lead, 2026-10-04; full list in `02_contracts.js` V1.3 SONGWRITER "As merged"; lane
   reports `plan/v13_lane_<s|a|u>_report.md`). Rule: every v1.3 branch is gated on its own field; absent = the 1.2 code, no new key.
   - Data (all optional, sanitize writes them only when valid, after `part`): `p.chords { verse|chorus|bridge: [4 semis] }`,

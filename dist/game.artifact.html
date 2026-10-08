@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V1.4.0.0</title>
+<title>Garage to Glory - V1.5.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -1213,12 +1213,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.4.0.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.5.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '1.4.0.0';
+  GG.VERSION = '1.5.0.0';
   GG.content = GG.content || {};
 
   var handlers = {};
@@ -1757,6 +1757,61 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ====================================================================== */
   C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
+
+  /* ======================================================================
+   V1.5 DESKTOP (plan/plan_contract_1.5.md §4; status.md Addendum 8, owner K1-K4 + Q1-Q3; SAVE_SCHEMA stays 10: no career key,
+   save codes + HoF backups unchanged; three optional settings, defaulted in GG.prefs.normalize only, never written until changed)
+   Phone law: at 390x844 / 440x956 / 844x390 (phone contexts) the game is v1.4's: every desktop feature is gated on an 
+   class (gg-wide = the PC layout, gg-desk = fine pointer + hover, gg-keys = playing on keys, gg-kbnav = the focus-ring mode),
+   none set on a phone before a real key press (GG.input.real). Proof: tests/pw_freeze.js (fixtures tests/fixtures/
+   phone_freeze_390 / _440 / _844l.json, recorded on 1.4.0.0) + every existing pw test + tools/phoneqa.js; tests/wide_css.test.js
+   (5w selectors start html.gg-wide / html.gg-desk; 50k selectors html.gg-kbnav / html.gg-wide; elsewhere only as html.<class>).
+   Settings (global gg.v1.settings; GG.save DEFAULT_SETTINGS unchanged):
+     keymap  { drums?: [6 codes by C.LANES role], strings?: [6 codes by pitch slot, low -> high; slot 4 = the 5th of 6, slot 5 =
+             the top] } ; KeyboardEvent.code (physical keys). Only a changed kind is stored; get() fills defaults per kind (an
+             invalid / duplicate / reserved / short list -> that kind's default).
+     calibKb { speaker, headphones } = prof() { audio, visual, at, vat } (ms; at = the key click test ran, vat = the key light check)
+     layout  'auto' | 'phone' | 'wide' (Settings > Look + feel "Layout"; auto = PC layout on a computer >= 1000x560, w >= 1.2 h)
+   GG.prefs (11_settings, pure): KEY_KINDS ['drums','strings'] ; KEY_DEFAULTS { drums: [Space KeyD KeyF KeyS ShiftLeft KeyA]
+     (Q1: kick snare hats crash toms ride), strings: [KeyA KeyS KeyD KeyF ShiftLeft Space] (Q2) } ; KEY_RESERVED (+ keyReserved
+     (code)) ; CLASSIC_KEYS (the v1.4 55:60 table: code-less events + the hidden J K L G H extras) ; LAYOUTS ;
+     keyKind(seat) ; keySlot(kind, lane, lanes) ; keysFor(s, kind, lanes) -> [code per lane] ;
+     keyLane(s, kind, lanes, code, key) -> { lane } (-1 = bound in this kind, off this rig: swallowed) | { col } (v1.4 column,
+       55 mirrors it for lefty) | null ; codeOf(key) ; bindKey(s, kind, slot, code) -> { keymap, swapped: slot|null,
+       refused: 'reserved'|'invalid'|null } (a same-kind conflict swaps) ; resetKeys(s, kind) -> keymap ;
+     keyLabel(code, layoutMap?, learned?) (layout map > learned > the code: KeyA -> A, Digit1 -> 1, ShiftLeft -> Shift) ;
+     calibFor(s, 'touch'|'keys') -> { audio, visual, visM } ms (keys: audio from calibKb when its at > 0, visual + visM from
+       calibKb when its vat > 0, else the touch profile's) ; offsets(s?, input?) -> { audio, visual, visM } s (no input = touch,
+       as v1.4 + visM) ; setCalib(profile, o, input?) ('keys' -> calibKb; at only with audio, vat only with visual; no input =
+       v1.4 exactly) ; layoutFor(w, h, desk, pref) ; pxBudget(w, h, wide) -> sqrt(2.4e6 / (w h)) when wide, else Infinity.
+   GG.input (50b_ui_input, DOM): real(ev) ; mode() 'keys'|'touch' ; desk() ; kbSeen() ; learned() ; wide() ; showKeyUI() ;
+     layoutPref() ; capture(fn) -> release() (one exclusive slot: fresh trusted keydowns only) ; captured() ; gigLive(on?).
+     GG.ui.wide() -> bool. Events 'input:mode' { mode }, 'ui:wide' { wide } (never while gigLive()).
+   Lanes (plan §4.3-§4.7): 55 gig keys (G.kind / G.keymap / G.input / G.offT / G.offK / G.caps frozen at count-in; window capture
+     keydown + keyup; releaseAll; blur -> pause(false) on keys; Esc pause / resume; 600 ms card arm; keycaps; gig-keys, gig-pause-keys,
+     gig-hint) ; 5h Settings > Keys (#set-keys) + Layout seg + key calibration (calib-input-touch|keys) ; 50k_ui_keys menu router
+     (KEY_BACK, gg-kbnav ring, kb-spots, kb-hints) + 50_ui_core focus manager (def.back / focus / hints, focusDefault) ; 54 grid
+     keys ; 5w_ui_wide (package B "Centred wide column" CSS, injected last) + 40 / 42 / 60 framing (insets left / right, pxBudget).
+   Test ids (new): set-keys, set-keys-kind-drums|strings, set-key-<drums|strings>-<0..5>, set-keys-msg, set-keys-pos,
+     set-keys-reset, set-keys-timing, set-calibrate-keys, set-keys-sticky, set-layout-auto|phone|wide, calib-input-touch|keys,
+     gig-keys, gig-keys-change, gig-pause-keys, gig-hint, kb-spots, kb-hs-<action>, kb-hints (never hs-*).
+   Debug: input { mode, desk, wide, layout, kbSeen, kbnav, live, captured, learned: n, lastReal } ; keys { top, focus, opener,
+     lastEsc, nav, swallowed: { repeat, stale } } ; gigui += keys { kind, map, input, caps, down, held, last }, keyTaps,
+     keySwallowed, lostKeyups ; render += insets.left / right, pxBudget ; calib += input.
+   As merged (lanes I -> N -> W + lead, 2026-10-08; lane reports plan/v15_lane_<i|n|w>_report.md, plan/v15_integration_report.md):
+     55: ui.keyLabel(code) (getLayoutMap -> learned -> code), ui.kcap(text) (the shared keycap, CSS .kcap in #gg-gigkeys-css);
+       debug('gigui') also cardRej, cardAge (ms since a card appeared), restart, off / offT / offK (ms), visM, laneW, hitY, hwW,
+       hwH, gemW, look, wide, keys.labels. The PC-layout stage frame runs to 0.1 of the highway (the kit just above it).
+     5h: debug('calib') += input ('touch'|'keys'), capturing. Test ids set-rail-<section> (the Settings rail), set-layout.
+     50k / 50: ui.setKbnav(on), ui.keyBack(), ui.kbnav(), ui.focusDefault(id?), ui.defaultFocus(el), ui.focusEl(n, { nav,
+       preventScroll }), ui.focusAt, ui.isTyping(n), ui.reachable(n), ui.noFocus(id), ui.openerOf(), ui.syncHints(), ui.w2(node,
+       nLeft), ui.walkToSpot(action); screen defs { back, focus, hints, focus: false }; event 'ui:kbnav' { on }; debug('keys')
+       += kbnav. 54: ui.seqDirty(), debug('seq').dirty / kbFocus; 51 / 5j: ui.creatorDirty(), ui.lookDirty(). Test ids seq-side,
+       side-* (the songwriter tools column).
+     5w / 40 / 42 / 60: R.setViewInsets({ left, right }); debug('render').pxBudget (null off-wide) and insets.left / right (only
+       when wide; the stage-0 fixtures pin { top, bottom }); 'perf:quality' reason 'layout' on 'ui:wide'; R.stage.info().hFov /
+       vFov (hFov <= 100 when wide); debug('wide').
+  ====================================================================== */
 
   /* ======================================================================
    V1.4 TUNING (status.md Addendum 7, owner picks M1-M3; plan/v14/; build report plan/v14/build_report.md). Numbers only, no new
@@ -23508,6 +23563,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     s = s && typeof s === 'object' ? s : {};
     var c = s.calib && typeof s.calib === 'object' ? s.calib : {};
     s.calib = { speaker: prof(c.speaker), headphones: prof(c.headphones) };
+    var ck = s.calibKb && typeof s.calibKb === 'object' ? s.calibKb : {};   // v1.5: the key timing (same shape)
+    s.calibKb = { speaker: prof(ck.speaker), headphones: prof(ck.headphones) };
+    s.keymap = fullMap(s.keymap);                                          // v1.5: every kind filled (stored: changed kinds only)
+    if (P.LAYOUTS.indexOf(s.layout) < 0) s.layout = 'auto';               // v1.5
     if (P.PROFILES.indexOf(s.audioProfile) < 0) s.audioProfile = 'speaker';
     if (P.GRAPHICS.indexOf(s.graphics) < 0) s.graphics = 'auto';   // v1.0: unknown -> the default (was 'high')
     s.noteSpeed = U.clamp(num(s.noteSpeed, 1), 0.5, 2);
@@ -23528,9 +23587,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   };
   P.profile = function () { return P.get().audioProfile; };
   P.setProfile = function (p) { if (P.PROFILES.indexOf(p) >= 0) P.set({ audioProfile: p }); return P.profile(); };
-  P.offsets = function (s) { s = s ? P.normalize(s) : P.get(); var c = s.calib[s.audioProfile]; return { audio: c.audio / 1000, visual: c.visual / 1000 }; };
-  P.setCalib = function (profile, o) {
+  P.offsets = function (s, input) { s = s ? P.normalize(s) : P.get(); var c = P.calibFor(s, input === 'keys' ? 'keys' : 'touch'); return { audio: c.audio / 1000, visual: c.visual / 1000, visM: c.visM }; };
+  P.setCalib = function (profile, o, input) {
     var s = P.get(); if (P.PROFILES.indexOf(profile) < 0) profile = s.audioProfile;
+    if (input === 'keys') {   // v1.5: the key calibration (calibKb): at only when the click test wrote audio, vat only with visual
+      var k = s.calibKb[profile], when = o && o.at != null ? o.at : Date.now();
+      if (o && o.audio != null) { k.audio = U.clamp(Math.round(o.audio), -MAX_OFF, MAX_OFF); k.at = when; }
+      if (o && o.visual != null) { k.visual = U.clamp(Math.round(o.visual), -MAX_OFF, MAX_OFF); k.vat = when; }
+      return P.set({ calibKb: s.calibKb, calibSeen: true }).calibKb[profile];
+    }
     var c = s.calib[profile];
     if (o && o.audio != null) c.audio = U.clamp(Math.round(o.audio), -MAX_OFF, MAX_OFF);
     if (o && o.visual != null) { c.visual = U.clamp(Math.round(o.visual), -MAX_OFF, MAX_OFF); c.vat = o.at != null ? o.at : Date.now(); }
@@ -23552,6 +23617,125 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var mean = use.reduce(function (a, b) { return a + b; }, 0) / use.length;
     return { ok: true, offset: U.clamp(Math.round(mean), -MAX_OFF, MAX_OFF), n: offs.length, spread: Math.round(use[use.length - 1] - use[0]) };
   };
+
+  /* ---- v1.5 "Desktop": gig keys, key calibration, the PC layout (pure; plan_contract_1.5 §4.1, owner K2 / K4 / Q1 / Q2) ---- */
+  P.KEY_KINDS = ['drums', 'strings'];
+  P.KEY_DEFAULTS = {   // owner Q1 "strong fingers" (Space kick, D snare, F hats, S crash, Shift toms, A ride); Q2 A S D F + thumb on top
+    drums: ['Space', 'KeyD', 'KeyF', 'KeyS', 'ShiftLeft', 'KeyA'],
+    strings: ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'ShiftLeft', 'Space']
+  };
+  P.KEY_RESERVED = ['Escape', 'Tab', 'Enter', 'NumpadEnter', 'CapsLock', 'ContextMenu', 'Control*', 'Alt*', 'Meta*', 'OS*', 'F1-F24',
+    'NumLock', 'ScrollLock', 'Pause', 'PrintScreen', 'Fn*', 'Unidentified', ''];
+  P.CLASSIC_KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // the v1.4 table (55:60, columns): code-less events + J K L G H
+  var EXTRAS = 'jklgh';
+  P.LAYOUTS = ['auto', 'phone', 'wide'];
+  var CODE_RE = /^[A-Za-z0-9]{2,24}$/;
+  P.keyReserved = function (code) {
+    if (typeof code !== 'string') return true;
+    if (/^F([1-9]|1\d|2[0-4])$/.test(code)) return true;
+    for (var i = 0; i < P.KEY_RESERVED.length; i++) {
+      var r = P.KEY_RESERVED[i];
+      if (r.charAt(r.length - 1) === '*' ? code.indexOf(r.slice(0, -1)) === 0 : r === code) return true;
+    }
+    return false;
+  };
+  function keyList(a, kind) {
+    var d = P.KEY_DEFAULTS[kind];
+    if (!Array.isArray(a) || a.length !== d.length) return d.slice();
+    for (var i = 0; i < a.length; i++) if (typeof a[i] !== 'string' || !CODE_RE.test(a[i]) || P.keyReserved(a[i]) || a.indexOf(a[i]) !== i) return d.slice();
+    return a.slice();
+  }
+  function fullMap(km) { km = km && typeof km === 'object' ? km : {}; return { drums: keyList(km.drums, 'drums'), strings: keyList(km.strings, 'strings') }; }
+  function storedMap(full) {   // what settings keep: only a kind that differs from its default
+    var out = {};
+    P.KEY_KINDS.forEach(function (k) { if (full[k].join() !== P.KEY_DEFAULTS[k].join()) out[k] = full[k].slice(); });
+    return out;
+  }
+  function mapOf(s) { return fullMap(s && s.keymap); }
+  P.keyKind = function (seat) { return seat && seat !== 'drums' ? 'strings' : 'drums'; };
+  P.keySlot = function (kind, lane, lanes) { return kind === 'strings' && lanes >= 5 && lane === lanes - 1 ? 5 : lane; };
+  P.keysFor = function (s, kind, lanes) {
+    var m = mapOf(s)[kind === 'strings' ? 'strings' : 'drums'], out = [];
+    for (var l = 0; l < lanes; l++) out.push(m[P.keySlot(kind, l, lanes)]);
+    return out;
+  };
+  P.codeOf = function (key) {
+    if (typeof key !== 'string') return null;
+    if (/^[a-zA-Z]$/.test(key)) return 'Key' + key.toUpperCase();
+    if (/^[0-9]$/.test(key)) return 'Digit' + key;
+    if (key === ' ') return 'Space';
+    if (key === 'Shift') return 'ShiftLeft';
+    return null;
+  };
+  P.keyLane = function (s, kind, lanes, code, key) {
+    var m = mapOf(s)[kind === 'strings' ? 'strings' : 'drums'], k = typeof key === 'string' ? key.toLowerCase() : '';
+    function bound(c) {
+      var slot = m.indexOf(c);
+      if (slot < 0 && c === 'ShiftRight' && m.indexOf('ShiftRight') < 0) slot = m.indexOf('ShiftLeft');
+      if (slot < 0) return null;
+      for (var l = 0; l < lanes; l++) if (P.keySlot(kind, l, lanes) === slot) return { lane: l };
+      return { lane: -1 };
+    }
+    function col(c) { return c != null && c < lanes ? { col: c } : null; }
+    if (!code) {
+      if (Object.prototype.hasOwnProperty.call(P.CLASSIC_KEYS, k)) return col(P.CLASSIC_KEYS[k]);
+      var c2 = P.codeOf(key);
+      return c2 ? bound(c2) : null;
+    }
+    var b = bound(code);
+    if (b) return b;
+    if (k.length === 1 && EXTRAS.indexOf(k) >= 0) return col(P.CLASSIC_KEYS[k]);
+    return null;
+  };
+  P.bindKey = function (s, kind, slot, code) {
+    var full = mapOf(s), res = { keymap: storedMap(full), swapped: null, refused: null };
+    if (P.KEY_KINDS.indexOf(kind) < 0 || !(slot >= 0 && slot < 6 && slot % 1 === 0) || typeof code !== 'string') { res.refused = 'invalid'; return res; }
+    if (P.keyReserved(code)) { res.refused = 'reserved'; return res; }
+    if (!CODE_RE.test(code)) { res.refused = 'invalid'; return res; }
+    var list = full[kind], other = list.indexOf(code);
+    if (other === slot) return res;
+    if (other >= 0) { list[other] = list[slot]; res.swapped = other; }
+    list[slot] = code;
+    res.keymap = storedMap(full);
+    return res;
+  };
+  P.resetKeys = function (s, kind) { var full = mapOf(s); if (P.KEY_DEFAULTS[kind]) full[kind] = P.KEY_DEFAULTS[kind].slice(); return storedMap(full); };
+  var CODE_LABEL = { Space: 'Space', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', IntlBackslash: '\\',
+    Semicolon: ';', Quote: '\'', Comma: ',', Period: '.', Slash: '/', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Backspace: '⌫' };
+  P.keyLabel = function (code, layoutMap, learned, sides) {
+    var v = null;
+    if (layoutMap) v = typeof layoutMap.get === 'function' ? layoutMap.get(code) : layoutMap[code];
+    if ((typeof v !== 'string' || v.length !== 1) && learned) v = learned[code];
+    if (typeof v === 'string' && v.length === 1) return v === ' ' ? 'Space' : v.toUpperCase();
+    if (typeof code !== 'string' || !code) return '';
+    var m = /^(?:Key|Digit)(.)$/.exec(code);
+    if (m) return m[1];
+    m = /^Numpad(\d)$/.exec(code);
+    if (m) return 'Num ' + m[1];
+    m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code);
+    if (m) return (sides ? m[2].charAt(0) + ' ' : '') + (m[1] === 'Control' ? 'Ctrl' : m[1]);
+    return CODE_LABEL[code] || code;
+  };
+  P.keySides = function (s, code) {
+    var m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code || '');
+    if (!m) return false;
+    var other = m[1] + (m[2] === 'Left' ? 'Right' : 'Left'), full = mapOf(s), mine = false, theirs = false;
+    P.KEY_KINDS.forEach(function (k) { if (full[k].indexOf(code) >= 0) mine = true; if (full[k].indexOf(other) >= 0) theirs = true; });
+    return mine && theirs;
+  };
+  P.calibFor = function (s, input) {
+    s = s && s.calib && s.calibKb ? s : P.normalize(s || P.get());
+    var c = s.calib[s.audioProfile], k = s.calibKb[s.audioProfile];
+    if (input !== 'keys') return { audio: c.audio, visual: c.visual, visM: c.vat > 0 };
+    var a = k.at > 0 ? k.audio : c.audio, vm = k.vat > 0;
+    return { audio: a, visual: vm ? k.visual : c.visual, visM: vm ? true : c.vat > 0 };
+  };
+  P.layoutFor = function (w, h, desk, pref) {
+    if (pref === 'phone') return false;
+    var big = w >= 1000 && h >= 560;
+    return pref === 'wide' ? big : big && !!desk && w >= 1.2 * h;
+  };
+  P.pxBudget = function (w, h, wide) { return wide ? Math.sqrt(2.4e6 / (w * h)) : Infinity; };
 
   /* ---- v0.8.3 drum sync (pure helpers; the model is in 55_ui_gig's "drum sync" block) -------------------------- */
   var EPS = 1e-9;
@@ -40740,7 +40924,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return PREFS;
   };
   function devRatio() { return (typeof window !== 'undefined' && window.devicePixelRatio) || 1; }
-  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio()); }
+  function wideNow() { return !!(GG.ui && GG.ui.wide && GG.ui.wide()); }
+  function pxCap() {
+    if (!wideNow() || !GG.prefs || !GG.prefs.pxBudget || typeof window === 'undefined') return Infinity;
+    var w = (container && container.clientWidth) || window.innerWidth || 1, h = (container && container.clientHeight) || window.innerHeight || 1;
+    return GG.prefs.pxBudget(w, h, true);
+  }
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio(), pxCap()); }
   R.applySettings = function () {
     var was = R.available && renderer ? renderer.getPixelRatio() : null;
     PREFS = null; R.prefs();
@@ -40751,6 +40941,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   if (GG.on) GG.on('settings:changed', function (p) {
     var k = (p && p.keys) || [];
     if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
+  });
+  if (GG.on) GG.on('ui:wide', function () {
+    if (!R.available || !renderer) return;
+    var was = renderer.getPixelRatio();
+    needsResize = true; applyResize(); invalidate(2);
+    if (renderer.getPixelRatio() !== was) GG.emit('perf:quality', { pixelRatio: renderer.getPixelRatio(), reason: 'layout' });
   });
   R.RATIO_STEPS = RATIO_STEPS.slice();
   R.nextRatio = function (cur, p95, heldMs) {
@@ -40772,7 +40968,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var cur = null, curName = 'none';
   var paused = false, rafId = 0, lastTs = 0, clock = 0, frames = 0;
   var W = 1, H = 1, needsResize = true, contextLost = false;
-  var insets = { top: 56, bottom: -1 };   // bottom -1 = default (30% of the height, where UI sheets sit)
+  var insets = { top: 56, bottom: -1, left: 0, right: 0 };   // bottom -1 = default (30% of the height, where UI sheets sit); v1.5 left / right
   var lastState = null;
   var drawCalls = 0, triangles = 0;
   var labels = [];                        // every label sprite made by makeLabel (rescaled on resize)
@@ -40894,6 +41090,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     o = o || {};
     if (typeof o.top === 'number') insets.top = Math.max(0, o.top);
     if (typeof o.bottom === 'number') insets.bottom = o.bottom;
+    if (typeof o.left === 'number') insets.left = Math.max(0, o.left);     // v1.5
+    if (typeof o.right === 'number') insets.right = Math.max(0, o.right);
     if (R.available && cur && cur.resize) { cur.resize(W, H, true); invalidate(2); }
   };
 
@@ -41111,16 +41309,17 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     camera.clearViewOffset(); camera.updateProjectionMatrix();
     var pad = o.pad == null ? 14 : o.pad, top = insets.top;
     var bottom = insets.bottom < 0 ? Math.round(H * 0.3) : insets.bottom;
-    if (W > H) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape: little room for sheets
+    var wide = wideNow(), left = Math.min(insets.left, W / 2), right = Math.min(insets.right, W / 2), bandW = Math.max(80, W - left - right);
+    if (W > H && !wide) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape (a phone on its side): little room for sheets
     var bandH = Math.max(80, H - top - bottom);
     var lo = 1, hi = 150, box = measureBox;
     for (var i = 0; i < 26; i++) {
       var mid = (lo + hi) / 2;
-      if (measure(mid, o.points) && box.w <= W - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
+      if (measure(mid, o.points) && box.w <= bandW - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
     }
     measure(hi, o.points);
     rig.goalDist = hi;
-    rig.goalOffX = (box.x0 + box.x1) / 2 - W / 2;
+    rig.goalOffX = (box.x0 + box.x1) / 2 - (left + bandW / 2);
     rig.goalOffY = (box.y0 + box.y1) / 2 - (top + bandH / 2);
     if (!o.animate || rig.snap) { rig.dist = rig.goalDist; rig.offX = rig.goalOffX; rig.offY = rig.goalOffY; rig.snap = false; }
     applyRig(rig.target.x, rig.target.y, rig.target.z);
@@ -42760,7 +42959,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   GG.registerDebug('render', function () {
     var d = { available: R.available, scene: cur ? curName : 'none', paused: paused, frames: frames, drawCalls: drawCalls, triangles: triangles };
-    if (R.available) { d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom }; }
+    if (R.available) {
+      d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom };
+      if (wideNow()) { d.insets.left = insets.left; d.insets.right = insets.right; }   // v1.5 (the phone fixtures keep { top, bottom })
+    }
+    var cap = pxCap(); d.pxBudget = isFinite(cap) ? Math.round(cap * 1000) / 1000 : null;   // v1.5
     if (cur && cur.debug) { var x = cur.debug(); for (var k in x) d[k] = x[k]; }
     return d;
   });
@@ -47047,6 +47250,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (sd && sd.sings) K.mics.push(sd.id);   // v1.1: the boom mic is theirs
       copyPose(K.drummer.L.cur, poses.snare.up); copyPose(K.drummer.R.cur, poses.hat.up);
     }
+    function you2d() {   // v1.5 review (pw_wide): screen y of your seat's head / torso / seat, null for the spectator camera
+      var view = camView(), H = ctx.size().h, v = new THREE.Vector3(), out = {};
+      if (view === 'spectator') return null;
+      var at = view === 'spot' && K.you ? [K.you.bx, K.you.bz, [['head', 1.55], ['torso', 1.15], ['seat', 0.75]]] : [0, KZ + THRONE_Z, [['head', 1.35], ['torso', 1.0], ['seat', KIT.throne[1]]]];
+      ctx.camera.updateMatrixWorld(); ctx.camera.updateProjectionMatrix();
+      at[2].forEach(function (p) { v.set(at[0], K.hs + p[1], at[1]).project(ctx.camera); out[p[0]] = Math.round((1 - v.y) / 2 * H); });
+      return out;
+    }
     function copyPose(out, p) { for (var i = 0; i < 6; i++) out[i] = p[i]; }
     function seatDrummer(D) {
       var m = null, i;
@@ -47246,10 +47457,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
-      var tFull = tb * H / bandH;
+      var tFull = tb * H / bandH, zk = 1;
+      if (GG.ui && GG.ui.wide && GG.ui.wide()) { var tU = tFull; tFull = Math.min(tFull, Math.tan(50 * Math.PI / 180) * H / W); zk = tU / tFull; }   // v1.5: hFov <= 100 deg (PC layout); zk > 1 = zoomed in
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
       if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
-      camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
+      camOffY = Math.round(H / 2 - (zk > 1.001 ? top + bandH - zk * bandH / 2 : top + bandH / 2)); camFov = cam.fov;
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();
       var hs = K ? K.hs : 0;
@@ -47926,7 +48138,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
             fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
-          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)),   // v0.8
+          you2d: you2d(),   // v1.5 review: your seat's screen y (CSS px): kit camera = the drummer, spot = your player
+          vFov: +ctx.camera.fov.toFixed(1), hFov: +(2 * Math.atan(Math.tan(ctx.camera.fov * Math.PI / 360) * ctx.camera.aspect) * 180 / Math.PI).toFixed(1) };   // v1.5
       }
     };
     return shell;
@@ -51196,11 +51410,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function render(e) {
     var keep = e.body && e.body.scrollTop;
+    var fk = focusKey(e);
     ui.clear(e.body); ui.clear(e.foot);
     var t = e.def.title;
     e.setTitle(typeof t === 'function' ? t(e.data) : t || '');
     e.def.build(e, e.data);
     if (keep) e.body.scrollTop = keep;
+    if (fk) restoreFocus(e, fk);
+    syncHints(e);
     GG.emit('ui:layout', { id: e.id });
   }
   function makeEntry(id, data) {
@@ -51222,7 +51439,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       stack[i].root.classList.toggle('hidden', i < coveredBelow);
       if (top) stack[i].root.removeAttribute('inert'); else stack[i].root.setAttribute('inert', '');
       stack[i].root.setAttribute('aria-hidden', top ? 'false' : 'true');
+      if (!top) syncHints(stack[i]);
     }
+    if (stack.length) syncHints(stack[stack.length - 1]);
     GG.emit('ui:stack', { ids: ui.stackIds() });
   }
 
@@ -51232,9 +51451,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (at >= 0) {
       while (stack.length - 1 > at) ui.close();
       var ex = stack[at]; ex.data = data || ex.data; render(ex); afterChange();
+      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);
       return ex;
     }
     var e = makeEntry(id, data);
+    e.opener = openerOf();
     ui.clearToasts();   // a new screen makes old hints stale (and they'd sit on its header)
     frame(e);
     stack.push(e);
@@ -51243,12 +51464,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     afterChange();
     GG.emit('screen:open', { id: id });
     if (e.def.onShow) e.def.onShow(e);
+    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);
     return e;
   };
   ui.close = function (id) {
     if (!stack.length) return;
     var at = id ? indexOf(id) : stack.length - 1;
     if (at < 0) return;
+    var opener = stack[at].opener;
     while (stack.length > at) {
       var e = stack.pop();
       if (e.def.onClose) { try { e.def.onClose(e); } catch (err) { console.warn('[ui] onClose', err); } }
@@ -51256,15 +51479,119 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       afterChange();
       GG.emit('screen:close', { id: e.id });
     }
+    if (ui.kbnav()) focusAfterClose(opener);
   };
   ui.closeAll = function () { if (stack.length) ui.close(stack[0].id); };
   ui.replace = function (id, data) { if (stack.length) ui.close(); return ui.show(id, data); };
   ui.get = function (id) { var i = indexOf(id); return i >= 0 ? stack[i] : null; };
 
+  /* ---- v1.5 (Lane N): keyboard focus (no-op unless html.gg-kbnav) ------------------------------------------------- */
+  var NO_FOCUS = { gig: 1, 'gig-results': 1 };
+  function now() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
+  ui.focusAt = -1e9;
+  ui.kbnav = function () { return typeof document !== 'undefined' && document.documentElement.classList.contains('gg-kbnav'); };
+  ui.isTyping = function (n) {
+    if (!n || n.nodeType !== 1) return false;
+    if (n.nodeName === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(n.type || 'text');
+    return n.nodeName === 'TEXTAREA' || n.nodeName === 'SELECT' || !!n.isContentEditable;
+  };
+  ui.reachable = function (n) {
+    if (!n || n.nodeType !== 1 || !n.isConnected || n.disabled) return false;
+    if (!n.getClientRects().length || (n.closest && n.closest('[inert], .hidden, [hidden]'))) return false;
+    var cs = getComputedStyle(n);
+    return cs.visibility !== 'hidden' && cs.display !== 'none';
+  };
+  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }
+  ui.focusEl = function (n, opts) {
+    if (!n || !n.focus) return false;
+    if (!(opts && opts.nav)) ui.focusAt = now();
+    try { n.focus({ preventScroll: !!(opts && opts.preventScroll) }); } catch (err) { n.focus(); }
+    return document.activeElement === n;
+  };
+  function noFocus(e) { return !e || e.def.focus === false || !!NO_FOCUS[e.id]; }
+  ui.noFocus = function (id) { return noFocus(id ? ui.get(id) : stack[stack.length - 1]); };
+  function byTid(rootEl, tid) { return rootEl && tid ? rootEl.querySelectorAll('[data-testid="' + String(tid).replace(/"/g, '\\"') + '"]') : []; }
+  function firstUsable(list) { for (var i = 0; i < list.length; i++) if (usable(list[i])) return list[i]; return null; }
+  ui.defaultFocus = function (e) {
+    if (!e) return null;
+    var r = e.root, f = e.def.focus, n = firstUsable(r.querySelectorAll('[data-autofocus]'));
+    if (n) return n;
+    if (typeof f === 'function') { try { n = f(e); } catch (err) { n = null; } if (usable(n)) return n; }
+    else if (typeof f === 'string' && (n = firstUsable(byTid(r, f)))) return n;
+    if ((n = firstUsable(e.foot ? e.foot.querySelectorAll('.btn.primary') : []))) return n;
+    var btns = [].slice.call(e.body ? e.body.querySelectorAll('button') : []).concat([].slice.call(e.foot ? e.foot.querySelectorAll('button') : []));
+    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;
+    return firstUsable(btns) || firstUsable(byTid(r, 'btn-close'));
+  };
+  function isBackBtn(b) { var t = b.getAttribute('data-testid') || '', l = b.getAttribute('aria-label') || ''; return /^(btn-back|btn-close)$/.test(t) || (b.classList.contains('icon-btn') && /^(Back|Close)\b/.test(l)); }
+  function dockPrimary() { return firstUsable(byTid(document.getElementById('hud'), 'btn-primary')); }
+  ui.focusDefault = function (id) {
+    if (!ui.kbnav()) return false;
+    var e = id ? ui.get(id) : stack[stack.length - 1];
+    if (!e) return stack.length ? false : ui.focusEl(dockPrimary());
+    if (noFocus(e)) return false;
+    return ui.focusEl(ui.defaultFocus(e));
+  };
+  function keyOf(n, rootEl) {
+    var tid = n && n.getAttribute && n.getAttribute('data-testid');
+    if (!tid) return null;
+    return { tid: tid, idx: Math.max(0, [].indexOf.call(byTid(rootEl || document, tid), n)) };
+  }
+  function openerOf() {
+    var a = typeof document !== 'undefined' ? document.activeElement : null;
+    if (!a || a === document.body || a === document.documentElement) return null;
+    return { el: a, key: keyOf(a) };
+  }
+  function focusKey(e) {
+    if (!ui.kbnav() || !e.root) return null;
+    var a = document.activeElement;
+    return a && a !== e.root && e.root.contains(a) ? keyOf(a, e.root) || { tid: null } : null;
+  }
+  function restoreFocus(e, fk) {
+    var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
+    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });
+    else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
+  }
+  function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }
+  function focusAfterClose(opener) {
+    if (focusOk(document.activeElement)) return;
+    var top = stack[stack.length - 1];
+    if (top && noFocus(top)) return;
+    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }
+    if (opener && opener.key && top) {
+      var list = byTid(top.root, opener.key.tid), n = list.length ? list[Math.min(opener.key.idx, list.length - 1)] : null;
+      if (usable(n)) { ui.focusEl(n); return; }
+    }
+    if (top) ui.focusDefault(top.id); else ui.focusEl(dockPrimary());
+  }
+  ui.openerOf = function (id) { var e = id ? ui.get(id) : stack[stack.length - 1], o = e && e.opener; return o ? (o.key ? o.key.tid : o.el.nodeName.toLowerCase()) : null; };
+  var HINTS = 'Tab move · Enter pick · Esc close';
+  function wantHints(e) {
+    var c = document.documentElement.classList;
+    return !!(e && e.foot && c.contains('gg-wide') && c.contains('gg-keys') && !noFocus(e) && stack[stack.length - 1] === e);
+  }
+  function syncHints(e) {
+    if (!e || !e.foot || typeof document === 'undefined') return;
+    var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
+    if (!want) { if (has) has.parentNode.removeChild(has); return; }
+    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || (ui.escActs && !ui.escActs(e) ? 'Tab move · Enter pick' : HINTS);   // v1.5 review: no 'Esc close' where Esc does nothing
+    if (has && has.textContent === text) return;
+    if (has) has.parentNode.removeChild(has);
+    e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
+  }
+  ui.syncHints = function () { stack.forEach(syncHints); };
+  ui.w2 = function (node, nLeft) {
+    if (!node || !node.classList) return node;
+    node.classList.add('w2');
+    for (var i = 0, k = 0; i < node.children.length; i++) node.children[i].classList.add(k++ < nLeft ? 'w2-a' : 'w2-b');
+    return node;
+  };
+
   /* ---- Confirm dialog ----------------------------------------------------------------------------
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
   ui.define('confirm', {
     kind: 'modal',
+    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },
     title: function (d) { return d.title || 'Sure?'; },
     build: function (s, d) {
       if (d.text) s.body.appendChild(el('p.dim', d.text));
@@ -51672,6 +51999,367 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 })(window.GG);
 
 </script>
+<script>/* 50b_ui_input.js */
+(function (GG) {
+  var ui = GG.ui = GG.ui || {};
+  var I = GG.input = GG.input || {};
+  var root = document.documentElement;
+  var MODS = { Shift: 1, Control: 1, Alt: 1, AltGraph: 1, Meta: 1, OS: 1, CapsLock: 1, Fn: 1, FnLock: 1, Hyper: 1, Super: 1, Symbol: 1, SymbolLock: 1, NumLock: 1, ScrollLock: 1 };
+  var NOKEY = { Unidentified: 1, Process: 1, Dead: 1 };
+  var mq = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  var mqc = window.matchMedia ? window.matchMedia('(any-pointer: coarse)') : null;
+  function deskAuto() { return st.desk && !(mqc && mqc.matches); }
+  var st = { desk: !!(mq && mq.matches), mode: 'touch', kbSeen: false, learned: {}, nLearned: 0, lastReal: null, live: false, wide: false,
+    cap: null, capStale: null, down: {}, resizeT: 0, pending: false };
+  st.mode = deskAuto() ? 'keys' : 'touch';
+  var LMAP = null, lmapAsked = false;
+
+  function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  function typing(t) {
+    if (!t || t.nodeType !== 1) return false;
+    var n = t.nodeName;
+    if (n === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(t.type || 'text');
+    return n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
+  }
+  I.typing = typing;
+  I.real = function (ev) {
+    return !!(ev && ev.isTrusted && ev.code && !ev.isComposing && ev.keyCode !== 229 && !NOKEY[ev.key] && !typing(ev.target));
+  };
+  function cls(name, on) { if (root.classList.contains(name) !== !!on) root.classList.toggle(name, !!on); }
+  function setMode(m) {
+    if (st.mode === m) return;
+    st.mode = m; cls('gg-keys', m === 'keys');
+    GG.emit('input:mode', { mode: m });
+  }
+  I.layoutPref = function () { var l = prefs().layout; return l === 'phone' || l === 'wide' ? l : 'auto'; };
+  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, deskAuto(), I.layoutPref()) : false; }
+  function checkWide() {
+    if (st.live) { st.pending = true; return; }
+    st.pending = false;
+    var w = !!wideNow();
+    if (w === st.wide) return;
+    st.wide = w; cls('gg-wide', w);
+    GG.emit('ui:wide', { wide: w });
+  }
+
+  function onKeyDown(ev) {
+    if (ev.isTrusted && ev.code) st.down[ev.code] = 1;
+    if (I.real(ev) && !MODS[ev.key]) {
+      st.lastReal = ev.code;
+      if (!st.kbSeen) st.kbSeen = true;
+      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key &&
+        !(ev.shiftKey && !/^[a-z]$/i.test(ev.key))) {
+        if (!(ev.code in st.learned)) st.nLearned++;
+        st.learned[ev.code] = ev.key;
+      }
+      setMode('keys');
+    }
+    if (st.cap) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      if (!ev.isTrusted || ev.repeat || ev.isComposing || ev.keyCode === 229 || (st.capStale && st.capStale[ev.code])) return;
+      var fn = st.cap.fn;
+      try { fn(ev); } catch (e) { console.error('[input] capture', e); }
+    }
+  }
+  function onKeyUp(ev) {
+    if (ev.code) { delete st.down[ev.code]; if (st.capStale) delete st.capStale[ev.code]; }
+    if (st.cap) { ev.preventDefault(); ev.stopImmediatePropagation(); }
+  }
+  window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('blur', function () { st.down = {}; if (st.capStale) st.capStale = {}; });
+  window.addEventListener('pointerdown', function (ev) { if (ev.pointerType === 'touch' || ev.pointerType === 'pen') setMode('touch'); }, { capture: true, passive: true });
+  window.addEventListener('resize', function () { clearTimeout(st.resizeT); st.resizeT = setTimeout(checkWide, 200); });
+  if (mq) {
+    var onMq = function () { st.desk = !!mq.matches; cls('gg-desk', st.desk); checkWide(); };
+    if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+    if (mqc) { if (mqc.addEventListener) mqc.addEventListener('change', checkWide); else if (mqc.addListener) mqc.addListener(checkWide); }
+  }
+  GG.on('settings:changed', function (p) { if (p && p.keys && p.keys.indexOf('layout') >= 0) checkWide(); });
+
+  I.askLayoutMap = function (again) {
+    if (lmapAsked && !again) return; lmapAsked = true;
+    try {
+      var k = navigator.keyboard;
+      if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; GG.emit('input:layoutmap', {}); }, function () {});
+    } catch (e) { /* none */ }
+  };
+  I.layoutMap = function () { return LMAP; };
+  try { if (navigator.keyboard && navigator.keyboard.addEventListener) navigator.keyboard.addEventListener('layoutchange', function () { if (lmapAsked) I.askLayoutMap(true); }); } catch (e) { /* none */ }
+  if (st.desk) I.askLayoutMap();
+
+  I.capture = function (fn) {
+    var tok = { fn: fn };
+    st.cap = tok; st.capStale = {};
+    for (var c in st.down) st.capStale[c] = 1;
+    return function release() { if (st.cap === tok) { st.cap = null; st.capStale = null; } };
+  };
+  I.captured = function () { return !!st.cap; };
+  I.gigLive = function (on) {
+    if (on != null) { st.live = !!on; if (!st.live && st.pending) checkWide(); }
+    return st.live;
+  };
+  I.mode = function () { return st.mode; };
+  I.desk = function () { return st.desk; };
+  I.kbSeen = function () { return st.kbSeen; };
+  I.learned = function () { return Object.assign({}, st.learned); };
+  I.wide = function () { return st.wide; };
+  I.showKeyUI = function () { return st.desk || st.kbSeen || st.wide; };
+  ui.tapWords = function (s) {
+    if (!st.desk || typeof s !== 'string') return s;
+    return s.replace(/\b([Tt])ap\b/g, function (m, t) { return t === 'T' ? 'Click' : 'click'; });
+  };
+  ui.keysCopy = function () { return st.desk && st.mode === 'keys' ? 'Press 1–8 to walk to a spot, or Enter for the big button.' : null; };
+  ui.wide = I.wide;
+
+  cls('gg-desk', st.desk); cls('gg-keys', st.mode === 'keys');
+  st.wide = !!wideNow(); cls('gg-wide', st.wide);
+
+  GG.registerDebug('input', function () {
+    return { mode: st.mode, desk: st.desk, wide: st.wide, layout: I.layoutPref(), kbSeen: st.kbSeen, kbnav: root.classList.contains('gg-kbnav'),
+      live: st.live, captured: !!st.cap, learned: st.nLearned, lastReal: st.lastReal };
+  });
+})(window.GG);
+
+</script>
+<script>/* 50k_ui_keys.js */
+(function (GG) {
+  var ui = GG.ui, I = GG.input || {};
+  var root = document.documentElement;
+  var KEY_BACK = { genre: 'btn-back', settings: 'btn-back', calib: 'btn-back', board: 'btn-board-close', world: 'btn-world-close',
+    'tour-region': 'btn-region-back', logo: 'btn-logo-back', hof: 'hof-back', recap: 'recap-close', intro: 'close', seat: 'close' };
+  var STICKY = { results: 1, wrap: 1, gig: 1, 'gig-set': 1, 'gig-results': 1, road: 1, 'label-demand': 1, cert: 1, loonies: 1, 'loonie-card': 1,
+    'rival-set': 1, 'rival-verdict': 1, 'tour-flight': 1, 'moose-opera': 1, 'tour-payoff': 1, gong: 1, title: 1, end: 1 };
+  var ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]';
+  var STALE_MS = 200;
+  var D = { lastEsc: null, nav: null, repeat: 0, stale: 0 };
+  var down = {};
+
+  function kbnavOn(on) {
+    if (root.classList.contains('gg-kbnav') === !!on) return;
+    root.classList.toggle('gg-kbnav', !!on);
+    GG.emit('ui:kbnav', { on: !!on });
+  }
+  ui.setKbnav = kbnavOn;
+  function swallow(ev, why) {
+    ev.preventDefault(); ev.stopPropagation();
+    if (why) D[why]++;
+  }
+  function tidOf(n) { return n && n.getAttribute ? n.getAttribute('data-testid') || (n === document.body ? 'body' : n.nodeName.toLowerCase()) : null; }
+  function topEntry() { var id = ui.top(); return id ? ui.get(id) : null; }
+  function tutCard() { var c = document.querySelector('#tut .tut-card'); return c && ui.reachable(c) ? c : null; }
+  function own(n) { return !!(n && n.closest && n.closest('[data-keys="own"]')); }
+  function isOwnArrows(n) { return !!n && (own(n) || n.nodeName === 'SELECT' || (n.nodeName === 'INPUT' && /^range$/i.test(n.type))); }
+  function altGr(ev) { return !!(ev.getModifierState && ev.getModifierState('AltGraph')); }
+
+  function scope() {
+    var e = topEntry(), out = [], seen = [];
+    function add(rootEl) {
+      if (!rootEl) return;
+      var list = rootEl.querySelectorAll(FOCUSABLE);
+      for (var i = 0; i < list.length; i++) {
+        var n = list[i];
+        if (seen.indexOf(n) >= 0) continue;
+        if (n.getAttribute('tabindex') === '-1' || !ui.reachable(n)) continue;
+        if (n.classList && n.classList.contains('scrim')) continue;
+        seen.push(n); out.push(n);
+      }
+    }
+    if (e) add(e.root);
+    else if (GG.state) add(document.getElementById('hud'));
+    add(tutCard());
+    out.sort(function (a, b) { return a === b ? 0 : a.compareDocumentPosition(b) & 4 ? -1 : 1; });
+    return out;
+  }
+  function badFocus(a) { return !a || a === document.body || a === root || !ui.reachable(a); }
+  function inScope(a) {
+    var e = topEntry(), c = tutCard(), h = document.getElementById('hud');
+    return !!a && ((e ? e.root.contains(a) : !!(h && h.contains(a))) || !!(c && c.contains(a)));
+  }
+  function indexIn(list, a) {
+    var i = list.indexOf(a);
+    if (i >= 0 || !a) return i;
+    var box = a.closest && a.closest('[data-keys="own"]');
+    for (var k = 0; box && k < list.length; k++) if (box.contains(list[k])) return k;
+    return -1;
+  }
+  function navFocus(n) {
+    ui.focusEl(n, { nav: true, preventScroll: true });
+    try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+  }
+  function focusDefaultNow() {
+    var e = topEntry();
+    if (e) return ui.focusDefault(e.id);
+    return ui.focusDefault();
+  }
+
+  function cycle(back) {
+    var list = scope();
+    if (!list.length) return false;
+    var a = document.activeElement, i = indexIn(list, a);
+    var n = i < 0 ? list[back ? list.length - 1 : 0] : list[(i + (back ? -1 : 1) + list.length) % list.length];
+    navFocus(n); D.nav = (back ? 'shift-tab:' : 'tab:') + tidOf(n);
+    return true;
+  }
+  function move(dir) {
+    var a = document.activeElement, list = scope();
+    if (badFocus(a) || !inScope(a)) {
+      if (focusDefaultNow()) return true;
+      var te = topEntry(), box = te && typeof te.def.keysIn === 'function' ? te.def.keysIn(te) : null;   // the card on top (55: pause / between songs)
+      if (box) { var inBox = list.filter(function (n) { return box.contains(n); }); if (inBox.length) list = inBox; }
+      if (!list.length) return false;
+      var first = list[dir === 'up' || dir === 'left' ? list.length - 1 : 0];
+      navFocus(first); D.nav = dir + ':' + tidOf(first);
+      return true;
+    }
+    var r = a.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, best = null, bestS = Infinity;
+    list.forEach(function (n) {
+      if (n === a || n.contains(a) || a.contains(n)) return;
+      var q = n.getBoundingClientRect(), qx = (q.left + q.right) / 2, qy = (q.top + q.bottom) / 2, main, gap;
+      if (dir === 'down') { if (qy <= cy + 1 || q.bottom <= r.bottom - 1) return; main = Math.max(0, q.top - r.bottom); gap = Math.max(0, Math.max(q.left, r.left) - Math.min(q.right, r.right)); }
+      else if (dir === 'up') { if (qy >= cy - 1 || q.top >= r.top + 1) return; main = Math.max(0, r.top - q.bottom); gap = Math.max(0, Math.max(q.left, r.left) - Math.min(q.right, r.right)); }
+      else if (dir === 'right') { if (qx <= cx + 1 || q.right <= r.right - 1) return; main = Math.max(0, q.left - r.right); gap = Math.max(0, Math.max(q.top, r.top) - Math.min(q.bottom, r.bottom)); }
+      else { if (qx >= cx - 1 || q.left >= r.left + 1) return; main = Math.max(0, r.left - q.right); gap = Math.max(0, Math.max(q.top, r.top) - Math.min(q.bottom, r.bottom)); }
+      var off = dir === 'up' || dir === 'down' ? Math.abs(qx - cx) : Math.abs(qy - cy);
+      var s = main + gap * 4 + off * 0.1 + (gap > 0 ? 1000 : 0);
+      if (s < bestS) { bestS = s; best = n; }
+    });
+    if (!best) return false;
+    navFocus(best); D.nav = dir + ':' + tidOf(best);
+    return true;
+  }
+  function clickable(e, tid) {
+    var list = e.root.querySelectorAll('[data-testid="' + tid + '"]');
+    for (var i = 0; i < list.length; i++) if (ui.reachable(list[i])) return list[i];
+    return null;
+  }
+  function back() {
+    var e = topEntry(), id = e && e.id, d = e && e.def, n;
+    if (!e) {
+      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }
+      return 'none';
+    }
+    if (id === 'confirm') { n = clickable(e, 'btn-confirm-no'); if (n) n.click(); else ui.close(id); return 'confirm-no'; }
+    if (typeof d.back === 'function') { d.back(e); return 'fn'; }
+    if (typeof d.back === 'string' && (n = clickable(e, d.back))) { n.click(); return 'back:' + d.back; }
+    var kb = KEY_BACK[id];
+    if (kb === 'close') { ui.close(id); return 'close'; }
+    if (kb && (n = clickable(e, kb))) { n.click(); return 'back:' + kb; }
+    if (STICKY[id] || d.sticky) return 'sticky';
+    if (d.kind !== 'full') { ui.close(id); return 'close'; }
+    if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
+    return 'none';
+  }
+  ui.escActs = function (e) {
+    var id = e && e.id, d = e && e.def;
+    if (!e || !d) return false;
+    if (id === 'confirm' || typeof d.back === 'function') return true;
+    if (typeof d.back === 'string' && clickable(e, d.back)) return true;
+    var kb = KEY_BACK[id];
+    if (kb === 'close' || (kb && clickable(e, kb))) return true;
+    if (STICKY[id] || d.sticky) return false;
+    if (d.kind !== 'full') return true;
+    return !!(clickable(e, 'btn-back') || clickable(e, 'btn-close'));
+  };
+  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };
+  function spotKey(code) {
+    var m = /^(?:Digit|Numpad)([1-8])$/.exec(code || '');
+    return m ? +m[1] - 1 : -1;
+  }
+  ui.walkToSpot = function (action) {
+    if (!action || !GG.state || ui.stackIds().length) return false;
+    var R = GG.render, ok = false;
+    try { ok = !!(R && R.goToHotspot && R.goToHotspot(action)); } catch (err) { ok = false; }
+    if (!ok) GG.emit('hotspot', { action: action });
+    D.nav = 'spot:' + action;
+    return true;
+  };
+
+  function onKeyDown(ev) {
+    if (I.captured && I.captured()) return;
+    if (ev.isComposing || ev.keyCode === 229 || ev.key === 'Unidentified' || ev.key === 'Process') return;
+    if (ev.ctrlKey || ev.metaKey || (ev.altKey && !altGr(ev))) return;
+    var k = ev.key, code = ev.code || '', t = ev.target, typing = ui.isTyping(t);
+    var isEnter = k === 'Enter', isSpace = k === ' ' || code === 'Space', isEsc = k === 'Escape', isTab = k === 'Tab', dir = ARROWS[k];
+    if ((isEsc || ((isEnter || isSpace) && !typing)) && ev.repeat) { swallow(ev, 'repeat'); return; }
+    if ((isEnter || isSpace) && !typing && ev.timeStamp < ui.focusAt + STALE_MS) { swallow(ev, 'stale'); return; }
+    if (isEnter || isSpace) down[code || k] = t;
+    if (I.gigLive && I.gigLive()) { if (isTab) ev.preventDefault(); return; }
+    if ((isTab || isEnter || isEsc || dir || spotKey(code) >= 0) && I.real && I.real(ev)) kbnavOn(true);
+    if (typing) {
+      if (isEsc) { swallow(ev); t.blur(); D.lastEsc = 'blur'; return; }
+      if (isTab) { swallow(ev); cycle(ev.shiftKey); }
+      return;
+    }
+    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }
+    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }
+    var a = document.activeElement;
+    if (dir) {
+      if (isOwnArrows(t) && !badFocus(a)) return;
+      if (move(dir)) ev.preventDefault();
+      return;
+    }
+    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {
+      swallow(ev);
+      delete down[code || k];
+      if (isEnter) { focusDefaultNow(); D.nav = 'enter:' + tidOf(document.activeElement); }
+      return;
+    }
+    var i = spotKey(code);
+    if (i >= 0 && !ui.stackIds().length && GG.state) {
+      var spots = ui.kbSpots ? ui.kbSpots() : [];
+      if (spots[i]) { ev.preventDefault(); ui.walkToSpot(spots[i]); }
+    }
+  }
+  function onKeyUp(ev) {
+    if (I.captured && I.captured()) return;
+    var k = ev.key, code = ev.code || '', key = code || k;
+    if (!(k === 'Enter' || k === ' ' || code === 'Space')) return;
+    var was = down[key];
+    delete down[key];
+    if (I.gigLive && I.gigLive()) return;
+    if (ui.isTyping(ev.target)) return;
+    if (was !== ev.target) swallow(ev, was ? 'stale' : null);
+  }
+  document.addEventListener('keydown', onKeyDown, true);
+  document.addEventListener('keyup', onKeyUp, true);
+  document.addEventListener('pointerdown', function () { kbnavOn(false); }, { capture: true, passive: true });
+  window.addEventListener('blur', function () { down = {}; });
+  GG.on('ui:wide', function () { if (ui.syncHints) ui.syncHints(); });
+  GG.on('input:mode', function () { if (ui.syncHints) ui.syncHints(); });
+
+  var CSS = 'html.gg-kbnav :focus-visible:not(input):not(textarea) { outline: 3px solid var(--amber); outline-offset: 2px; }\n'
+    + 'html.gg-kbnav .seq-grid .cell:focus-visible { outline-offset: -2px; }\n'
+    + 'html.gg-kbnav .kb-spots, html.gg-wide .kb-spots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }\n'
+    + 'html.gg-kbnav .kb-spots > button, html.gg-wide .kb-spots > button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px;'
+    + ' padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(13, 18, 30, .82); color: var(--text);'
+    + ' font: 700 13px/1.1 var(--font); cursor: pointer; }\n'
+    + 'html.gg-kbnav .kb-spots > button b, html.gg-wide .kb-spots > button b { display: inline-grid; place-items: center; min-width: 20px; height: 20px;'
+    + ' padding: 0 4px; border-radius: 5px; background: var(--panel2); border: 1px solid var(--line); color: var(--amber); font-size: 12px; }\n'
+    + 'html.gg-wide .kb-hints { order: 99; flex: 0 0 auto; width: 100%; margin: 0; color: var(--faint); font: 600 12px/1.4 var(--font); text-align: center;'
+    + ' letter-spacing: .02em; pointer-events: none; }\n'
+    + 'html.gg-wide .sheet-foot:has(> .kb-hints), html.gg-wide .modal-foot:has(> .kb-hints), html.gg-wide .full-foot:has(> .kb-hints) { flex-wrap: wrap; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"], html.gg-wide.gg-keys [data-testid="btn-back"] { position: relative; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after, html.gg-wide.gg-keys [data-testid="btn-back"]::after { content: "Esc"; position: absolute;'
+    + ' top: 50%; transform: translateY(-50%); padding: 1px 5px; border-radius: 4px; background: var(--panel2); border: 1px solid var(--line);'
+    + ' color: var(--dim); font: 700 10px/1.4 var(--font); letter-spacing: .04em; pointer-events: none; white-space: nowrap; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after { right: calc(100% + 6px); }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-back"]::after { left: calc(100% + 6px); }\n';
+  (function inject() {
+    if (document.getElementById('gg-keys-css')) return;
+    var s = document.createElement('style'); s.id = 'gg-keys-css'; s.textContent = CSS;
+    document.head.appendChild(s);
+  })();
+
+  GG.registerDebug('keys', function () {
+    var a = document.activeElement;
+    return { top: ui.top(), focus: badFocus(a) ? null : tidOf(a), opener: ui.openerOf ? ui.openerOf() : null, lastEsc: D.lastEsc, nav: D.nav,
+      kbnav: root.classList.contains('gg-kbnav'), swallowed: { repeat: D.repeat, stale: D.stale } };
+  });
+})(window.GG);
+
+</script>
 <script>/* 51_ui_menu.js */
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -51757,9 +52445,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });
   GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
+    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },
     onShow: function () {
       if (!want3d()) return;
       try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
@@ -51797,7 +52487,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             el('p.tagline', "From your parents' garage to the Loonie Awards. Probably.")
           ]),
           el('div.title-foot', [
-            is3d ? el('div.title-hint', { testid: 'title-hint' }, 'Psst: tap the kit. Or Marcel.') : null,
+            is3d ? el('div.title-hint', { testid: 'title-hint' }, ui.tapWords ? ui.tapWords('Psst: tap the kit. Or Marcel.') : 'Psst: tap the kit. Or Marcel.') : null,
             el('div.menu-list', kids),
             el('div.credits', [
               el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION),
@@ -51996,8 +52686,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.kit', { style: { background: p.kitColor || '#c33' }, title: 'Kit colour' })
     ]);
   }
+  function creatorSnap() {
+    try { return JSON.stringify([draft.name || '', draft.nick || '', draft.presetId, !!draft.useCustom, draft.custom || null, !!draft.carry, !!draft.skipLessons, draft.careerDifficulty]); }
+    catch (e) { return ''; }
+  }
+  ui.creatorDirty = function () { var e = ui.get('creator'); return !!(e && e.data._snap != null && creatorSnap() !== e.data._snap); };
   ui.define('creator', {
     kind: 'full',
+    back: function (s) {
+      function leave() { var b = s.root.querySelector('[data-testid="btn-back"]'); if (b) b.click(); else ui.close(s.id); }
+      if (!ui.creatorDirty()) { leave(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(); });
+    },
     build: function (s) {
       var list = presets();
       if (!draft.presetId || !list.some(function (p) { return p.id === draft.presetId; })) draft.presetId = list[0].id;
@@ -52077,6 +52777,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         ])
       ]);
       s.foot.appendChild(create);
+      if (s.data._snap == null) s.data._snap = creatorSnap();
     }
   });
 
@@ -52088,7 +52789,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ];
   var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
-    kind: 'full',
+    kind: 'full', focus: 'btn-coldopen-next',
     build: function (s, d) {
       var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
@@ -52121,7 +52822,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             .then(function (ok) { if (ok) go(); });
         }, mine));
       });
-      ui.append(s.body, [el('div.stack', [
+      ui.append(s.body, [ui.w2(el('div.stack', [
         btn('.btn.primary.block', { testid: 'menu-resume', onclick: function () { ui.close(s.id); } }, 'Resume'),
         el('div.caps', 'Save to a slot'),
         saves,
@@ -52142,7 +52843,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
               .then(function (ok) { if (ok) GG.main.quitToTitle(); });
           } }, 'Quit to title')
         ])
-      ])]);
+      ]), 5)]);
     }
   });
 
@@ -52310,7 +53011,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         + '.hud-chip.week .v { letter-spacing: -.04em; } .hud-chip.week .wk-of { font-size: 10px; opacity: .8; letter-spacing: 0; }\n'
         + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
         + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
-        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }';
+        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }\n'
+        + '.kb-spots { display: none; }';
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -52332,7 +53034,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     else if (st.phase === 'ended') ui.show('end');
   }
   function dockHint(st) {
-    if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+    if (st.phase === 'plan' && st.totalWeek <= 2) {
+      var kc = GG.main.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: on keys, the keys; on a computer, 'click'
+      if (kc) return kc;
+      var line = GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+      return ui.tapWords ? ui.tapWords(line) : line;
+    }
     if (st.phase === 'monday') return 'New week. Somebody has news.';
     if (st.phase === 'gig') return vanLine(st, 'dock');
     return '';
@@ -52376,6 +53083,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
+    refreshKbSpots();
   };
 
   /* ======================================================================================================
@@ -52406,9 +53114,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
         ui.rivalCardNote ? ui.rivalCardNote(st, card) : null, ui.tourCardNote ? ui.tourCardNote(st, card) : null]);   // v0.7: region strip   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
+      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });
+      s.body.classList.add('w2');
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
-          s.body.appendChild(btn('.choice', { testid: 'choice-' + i, onclick: function () {
+          s.body.appendChild(btn('.choice.w2-b', { testid: 'choice-' + i, onclick: function () {
             var cur = S();
             if (!cur || cur.phase !== 'monday' || !cur.card || cur.card.resolved) return;   // double-tap guard
             var r = GG.career.resolveCard(cur, i);
@@ -52420,13 +53130,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         });
         return;
       }
-      var chosen = card.choices && card.choices[res.choice];
+      var chosen = card.choices && card.choices[res.choice], nOut = s.body.children.length;
       ui.append(s.body, [
         chosen ? el('div.you', ['You picked: ', el('b', fill(chosen.label))]) : null,
         lastSuccess === true ? el('span.tag.amber', { style: 'margin-bottom:8px' }, 'It worked!') : lastSuccess === false ? el('span.tag', { style: 'margin-bottom:8px;color:var(--bad)' }, 'Welp.') : null,
         el('div.quote', fill(res.outcome || '')),
         el('div', { style: 'margin-top:12px' }, ui.deltaChips(res.deltas, { emptyText: 'Nothing changed. Somehow.' }))
       ]);
+      for (var oi = nOut; oi < s.body.children.length; oi++) s.body.children[oi].classList.add('w2-b');
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-card-ok', onclick: function () { ui.close(s.id); } }, 'OK'));
     },
     onShow: function () { sfx('card'); },
@@ -52537,13 +53248,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           s.rerender();
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
-      ui.append(s.body, [el('div.stack', [
-        ui.tourPlanHead ? ui.tourPlanHead(st) : null,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
-        gigBox(st, true, function () { s.rerender(); }),
+      var tph = ui.tourPlanHead ? ui.tourPlanHead(st) : null, gb = gigBox(st, true, function () { s.rerender(); }), note = el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'), sb = studioBtn(st);
+      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });
+      acts.classList.add('w2-b');
+      ui.append(s.body, [el('div.stack.w2', [
+        tph,
+        gb,
         slots,
         acts,
-        el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'),
-        studioBtn(st)
+        note,
+        sb
       ])]);
       var full = plan.every(Boolean);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-go', disabled: !full, onclick: goWeek }, full ? 'Go! Play the week' : 'Fill all three blocks'));
@@ -52611,7 +53325,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var steps = [], gigEl = null;   // steps: [node, delayBeforeMs, onReveal]
       (r.blocks || []).forEach(function (b, i) {
         var a = ui.act(b.activity);
-        var box = el('div.blk', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
+        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) {   // v0.9: the leak net (a line naming another band's people reads neutral)
@@ -52635,6 +53349,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
         s.body.appendChild(none); steps.push([none, 300]);
       }
+      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });
+      s.body.classList.add('w2');
       steps.forEach(function (st2) { st2[0].hidden = true; });
       var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: next }, nextLabel);
       var skip = btn('.btn.ghost.block', { testid: 'btn-results-skip', onclick: function (e) { e.stopPropagation(); revealAll(); } }, 'Skip ▸▸');
@@ -52646,7 +53362,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (step[2]) step[2]();
         if (step[0].scrollIntoView) step[0].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
-      function done() { skip.hidden = true; ok.hidden = false; }
+      function done() {
+        var had = document.activeElement === skip || !document.activeElement || document.activeElement === document.body;
+        skip.hidden = true; ok.hidden = false;
+        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);
+      }
       function tick() {
         s.data._timer = null;
         if (k >= steps.length) return done();
@@ -52733,7 +53453,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
       if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
-      ui.append(s.body, el('div.stack', parts));
+      var wcol = el('div.stack', parts);
+      [].forEach.call(wcol.children, function (n) {
+        var right = n.getAttribute('data-testid') === 'wrap-moods' || n.classList.contains('year-end') || !!(n.firstChild && n.firstChild.textContent === 'Group chat');
+        n.classList.add(right ? 'w2-b' : 'w2-a');
+      });
+      wcol.classList.add('w2');
+      ui.append(s.body, wcol);
       var t = savedText();
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
       s.data._off = [GG.on('save:done', function () { ind.textContent = '✓ Saved'; ind.className = 'saved ok'; }),
@@ -52864,8 +53590,31 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     refreshFallback();
   };
 
+  /* ---- v1.5 (Lane N): the spots on the keyboard ------------------------------------------------------------- */
+  ui.kbSpots = function () { return SPOTS.map(function (x) { return x[0]; }); };
+  var kbSpots = null;
+  function kbSpotsWanted() { var c = document.documentElement.classList; return c.contains('gg-kbnav') || c.contains('gg-wide'); }
+  function refreshKbSpots() {
+    if (!kbSpots) return;
+    var st = S();
+    SPOTS.forEach(function (x, i) {
+      var b = kbSpots.children[i], sp = spotOf(x[0], st), label = sp[1] + ' ' + sp[2];
+      if (b && b._label !== label) { b._label = label; ui.clear(b); ui.append(b, [el('b', String(i + 1)), label]); b.setAttribute('aria-label', sp[2] + ' (' + (i + 1) + ')'); }
+    });
+  }
+  function ensureKbSpots() {
+    if (kbSpots || !dock || !kbSpotsWanted()) return;
+    kbSpots = el('div.kb-spots', { testid: 'kb-spots', role: 'toolbar', 'aria-label': 'Spots' }, SPOTS.map(function (x) {
+      return btn('', { testid: 'kb-hs-' + x[0], onclick: function () { if (ui.walkToSpot) ui.walkToSpot(x[0]); else GG.emit('hotspot', { action: x[0] }); } });
+    }));
+    dock.root.insertBefore(kbSpots, dock.root.firstChild);
+    refreshKbSpots();
+  }
+  GG.on('ui:kbnav', function (p) { if (p && p.on) ensureKbSpots(); });
+  GG.on('ui:wide', function (p) { if (p && p.wide) ensureKbSpots(); });
+
   /* ---- Init + listeners ------------------------------------------------------------------------------------- */
-  ui.initWeek = function () { buildHud(); ui.refreshHud(); };
+  ui.initWeek = function () { buildHud(); ensureKbSpots(); ui.refreshHud(); };
   ui.refreshGarage = function () { ui.refreshHud(); refreshFallback(); };
   GG.on('stats:changed', ui.refreshHud);
   GG.on('ui:stack', ui.refreshHud);
@@ -52974,13 +53723,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
-      ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
+      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
+  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });
 })(window.GG);
 
 </script>
@@ -53217,6 +53967,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r;
   }
   function changed(D) {
+    D.dirty = true;
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -53241,6 +53992,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -53255,18 +54007,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
           { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
         c.style.setProperty('--lc', ui.LANES[name].color);
+        if (keys) cellKeys(c, hit, L.name + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, false);
+    if (keys) gridKeys(grid, D);
     return grid;
   }
   function buildPartGrid(s, D) {
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -53274,15 +54029,58 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
       var row = [];
       for (r = 0; r < n; r++) {
-        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        var phit = GG.songs.isHit(sec.rows[r], step);
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (phit ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
         c.style.setProperty('--lc', PART_COLORS[r]);
+        if (keys) cellKeys(c, phit, (names[r] || String(r + 1)) + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, true);
+    if (keys) gridKeys(grid, D);
     return grid;
+  }
+  function keyGrid() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function cellKeys(c, hit, label) {
+    c.setAttribute('role', 'gridcell'); c.setAttribute('aria-selected', hit ? 'true' : 'false'); c.setAttribute('aria-label', label); c.tabIndex = -1;
+  }
+  var GRID_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], PageUp: [0, -4], PageDown: [0, 4], Home: [0, -99], End: [0, 99] };
+  function gridKeys(grid, D) {
+    var V = D.view, rows = V.cells, nL = rows[0] ? rows[0].length : 0;
+    grid.setAttribute('role', 'grid'); grid.setAttribute('data-keys', 'own'); grid.setAttribute('aria-label', 'Beat grid: arrows move, Space adds or removes');
+    var f = D.kbFocus || { l: 0, s: 0 };
+    f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
+    if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
+    function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
+    grid.addEventListener('focusin', function (e) {
+      var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
+      if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
+      var old = cellAt(D.kbFocus.l, D.kbFocus.s);
+      if (old && old !== c) old.tabIndex = -1;
+      c.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+    });
+    grid.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      var c = e.target; if (!c.classList || !c.classList.contains('cell')) return;
+      var mv = GRID_KEYS[e.key];
+      if (mv) {
+        e.preventDefault();
+        var l = U.clamp(+c.dataset.l + mv[0], 0, nL - 1), st = U.clamp(+c.dataset.s + mv[1], 0, rows.length - 1), n = cellAt(l, st);
+        if (n && n !== c) {
+          c.tabIndex = -1; n.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+          if (ui.focusEl) ui.focusEl(n, { nav: true, preventScroll: true }); else n.focus();
+          try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+        }
+        return;
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (grid._toggle) grid._toggle(c);
+      }
+    });
   }
   function paintable(grid, D, isPart) {
     var paint = null;
@@ -53294,6 +54092,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
         rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
         c.classList.toggle('on', paint.value);
+        if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
         if (paint.value && !(D.handle && D.handle.playing)) partPreview(D, pr);
         handEdit(D); changed(D);
         return;
@@ -53307,17 +54106,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
+      if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
       if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       handEdit(D); changed(D);
     }
+    function start(c, id) {
+      if (isPart) partV2(D);
+      var sec = rowsOf();
+      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
+      apply(c);
+    }
+    grid._toggle = function (c) { if (!cellOf(c)) return; start(c, 'key'); paint = null; };
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
-      var sec = rowsOf();
-      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
+      start(c, e.pointerId);
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      apply(c);
     });
     grid.addEventListener('pointermove', function (e) {
       if (!paint || e.pointerId !== paint.id) return;
@@ -53609,8 +54413,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     ui.append(s.body, [header(s, D), meterStrip(D), coachBubble(s, D),
       V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
         el('div.qs-title', 'Start from a recipe'),
-        el('div.quick-recipes', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
-        el('div.quick-sliders', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+        el('div.quick-recipes.w2-a', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
+        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+    V.qmain.classList.add('w2'); s.body.classList.remove('w2');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
       stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
@@ -53624,7 +54429,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- Screen ---------------------------------------------------------------------------------------------- */
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
-    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
+    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); D.dirty = true; head(s, D); } } });
     var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
     return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -53665,6 +54470,58 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;   // v0.7.2: Marcel's French one stays French on load
     if (D.onSave) D.onSave(entry);
   }
+  /* ---- v1.5 (Lane N, package B): the tools column, PC layout only ------------------------------------------------ */
+  var FEEL_STOPS = [[0, 'Straight'], [2, 'Light swing'], [4, 'Swing']];
+  function sidePanel(s, D) {
+    if (!(ui.wide && ui.wide()) || D.mode === 'view' || D.tab === 'song') return null;
+    var sec = hasSec(D, D.tab), drums = sec && !(partLayer(D) && partHas(D, D.tab)), p = D.pat, G = GG.songs.genre(genre());
+    function edit(fn) { handEdit(D); fn(); s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    var kids = [];
+    if (drums) {
+      var fills = chipSec(D.tab), hasFill = !!(p.fillBars && p.fillBars[D.tab]);
+      kids.push(el('div.caps', 'This section'), el('div.seq-side-tools', [
+        btn('.btn.small', { testid: 'side-copy', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⧉ Copy to…'),
+        btn('.btn.small', { testid: 'side-clear', onclick: function () { edit(function () { if (fillOn(D)) p.fillBars[D.tab] = GG.songs.blankSection(p.lanes); else p.sections[D.tab] = GG.songs.blankSection(p.lanes); }); } }, '✕ Clear'),
+        fills ? btn('.btn.small' + (D.fill ? '.on' : ''), { testid: 'side-fill', 'aria-pressed': D.fill ? 'true' : 'false', onclick: function () {
+          if (!D.fill && !hasFill) { p.fillBars = p.fillBars || {}; p.fillBars[D.tab] = p.sections[D.tab].slice(); (D.fillNew = D.fillNew || {})[D.tab] = 1; }
+          D.fill = !D.fill; s.rerender(); changed(D);
+        } }, D.fill ? '✨ Main bar' : '✨ Fill on bar 4') : null,
+        btn('.btn.small', { testid: 'side-beat', onclick: function () { ui.show('seq-beat', { owner: s }); } }, '🥁 Swap a beat')]));
+    }
+    var sw = p.swing || 0;
+    kids.push(el('div.caps', 'Feel'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Feel' }, FEEL_STOPS.map(function (f) {
+      var on = sw === f[0] || (f[0] === 2 && sw > 0 && sw < 4);
+      return btn('.seg' + (on ? '.on' : ''), { testid: 'side-feel-' + f[0], 'aria-pressed': on ? 'true' : 'false', onclick: function () {
+        if (p.swing === f[0]) return;
+        p.swing = f[0]; if (D.qs) D.qs.swing = f[0]; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D);
+      } }, f[1]);
+    })));
+    var cur = baseArrangementId(p);
+    kids.push(el('div.caps', 'Song order'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Song order' }, GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);
+      return btn('.seg' + (id === cur ? '.on' : ''), { testid: 'side-arr-' + id, 'aria-pressed': id === cur ? 'true' : 'false', title: a.map(function (x) { return SEC_LABEL[x] || x; }).join(' · '),
+        onclick: function () { if (id === cur) return; edit(function () { p.arrangement = a.slice(); }); } }, ARR_NAMES[id]);
+    })));
+    function bpm(d) { var v = U.clamp(p.bpm + d, G.tempo[0], G.tempo[1]); if (v === p.bpm) return; p.bpm = v; if (D.qs) D.qs.bpm = v; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    kids.push(el('div.caps', 'Tempo'), el('div.seq-side-tempo', [
+      btn('.btn.small', { testid: 'side-tempo-down', 'aria-label': 'Slower', onclick: function () { bpm(-5); } }, '−'),
+      el('span.grow', { testid: 'side-tempo' }, [el('b', String(p.bpm)), ' bpm · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '')]),
+      btn('.btn.small', { testid: 'side-tempo-up', 'aria-label': 'Faster', onclick: function () { bpm(5); } }, '+')]));
+    return el('div.seq-side', { testid: 'seq-side' }, kids);
+  }
+  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {
+    var sideCss = document.createElement('style'); sideCss.id = 'gg-seq-side-css';
+    sideCss.textContent = 'html.gg-wide .seq-side { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg { display: flex; gap: 4px; flex-wrap: wrap; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg { flex: 1 1 0; min-height: 36px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--dim); font: 700 12px/1.1 var(--font); cursor: pointer; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg.on { background: var(--panel2); color: var(--text); border-color: var(--amber); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 12px; background: var(--panel); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo b { font-size: 18px; }\n';
+    document.head.appendChild(sideCss);
+  }
+  GG.on('ui:wide', function () { var e = ui.get('seq'); if (e && e.data && e.data.screen === 'edit') e.rerender(); });
+
   function buildEdit(s, D) {
     var ro = D.mode === 'view', V = D.view = {};
     if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
@@ -53687,16 +54544,31 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       coachBubble(s, D),
       sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
       layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
+      sidePanel(s, D),
       main
     ]);
+    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });
+    s.body.classList.add('w2');
     V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
     V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
     ui.append(s.foot, [V.loop, V.song, doneButton(s, D)]);
     head(s, D); rerate(D); playButtons(D);
   }
 
+  function snapOf(D) { try { return JSON.stringify([D.pat, D.title]); } catch (e) { return ''; } }
+  function dirty(D) { return !!(D && D.mode !== 'view' && D.dirty && D._snap != null && snapOf(D) !== D._snap); }
+  ui.seqDirty = function () { var e = ui.get('seq'); return dirty(e && e.data); };
+  function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
+    hints: function (s) {
+      var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
+      return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
+    },
+    back: function (s) {
+      if (!dirty(s.data)) { leave(s); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(s); });
+    },
     build: function (s, D) {
       if (D.mode === 'view') D.screen = 'edit';
       if (!D.screen) D.screen = D.pat ? 'edit' : 'quick';
@@ -53705,6 +54577,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
@@ -53893,7 +54766,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       playhead: D.view ? D.view.ph : null, part: D.pat.part ? U.clone(D.pat.part) : null, recipe: D.pat.recipe ? U.clone(D.pat.recipe) : null,
       sliders: { energy: q.energy, mood: q.mood, feel: q.swing, fills: q.fills, bpm: q.bpm }, chords: chords,
       chips: chipSec(D.tab) && chords[D.tab] ? chords[D.tab].map(function (x) { return chordName(D, x, tonic); }) : [],
-      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null };
+      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null, dirty: dirty(D), kbFocus: D.kbFocus ? U.clone(D.kbFocus) : null };
   });
 })(window.GG);
 
@@ -53907,7 +54780,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
   }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
-  var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // v0.8: toms (lane 5) = G, ride (lane 6) = H
+  var P = GG.prefs;   // v1.5: the key map + timing helpers (11_settings); the v1.4 KEYS table is P.CLASSIC_KEYS
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   var MOMENT_TEXT = { mosh: 'Mosh pit!', lighters: 'Lighters up', boo: 'Boooo', drinks: 'Incoming drinks!', wallOfDeath: 'Wall of death!',
@@ -53949,6 +54822,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
 
   var G = null;   // the show in progress (one at a time)
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-gigkeys-css')) {
+    var kcss = document.createElement('style'); kcss.id = 'gg-gigkeys-css';
+    kcss.textContent = [
+      '.kcap { display: inline-block; min-width: 1.9em; padding: 0 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .35); border-bottom-width: 2px;',
+      '  background: rgba(255, 255, 255, .08); color: var(--text, #fff); font: 800 12px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; white-space: nowrap; }',
+      '.gig-keys { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }',
+      '.gig-keys .gk-row { display: flex; flex-wrap: wrap; gap: 6px 12px; }',
+      '.gig-keys .gk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }',
+      '.gig-keys .gk-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }',
+      '.gig-keys .gk-foot { align-items: center; gap: 8px; }',
+      '.gig-pause-keys { margin: 0; }',
+      '.gig-hint { position: absolute; right: 16px; bottom: calc(34% + 12px); z-index: 2; padding: 6px 10px; border-radius: 10px; background: rgba(15, 20, 32, .82);',
+      '  color: var(--dim, #aab); font-size: 13px; pointer-events: none; }'
+    ].join('\n');
+    document.head.appendChild(kcss);
+  }
   function S() { return GG.state; }
   function fill(t) { return t && S() ? ui.fill(t, S()) : t; }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
@@ -54045,7 +54934,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       guardRaf = 0;
       if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
       var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top) });
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.1 * hw.height : 0)) });
     });
   }
   function restoreScene() {   // back to the garage (the stage hands its GPU memory back)
@@ -54088,18 +54977,24 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
       if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) - G.D < G.chart.duration - 0.1) pause(true);
     },
-    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
+    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard,
+    'ui:wide': function () { if (!G || !G.dom) return; layout(); guard(); gigHint(); if (!G.raf) still(); }
   };
   function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count' || G.mode === 'hold' || G.waking)) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
-    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
-    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
-    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); window.addEventListener('keyup', onKeyUp); }
-    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); window.removeEventListener('keyup', onKeyUp); }
+    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
+    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); document.removeEventListener('pointerdown', onDown, { capture: true }); }
+    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); }
+    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); }
+    if (on) { window.addEventListener('keydown', onKey, true); window.addEventListener('keyup', onKeyUp, true); window.addEventListener('blur', onBlur); }
+    else { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKeyUp, true); window.removeEventListener('blur', onBlur); }
   }
 
   GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
+  GG.on('ui:wide', function () { ['gig-set', 'gig-results'].forEach(function (id) { var e = ui.get && ui.get(id); if (e && G) e.rerender(); }); });
+  GG.on('input:mode', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });
+  GG.on('input:layoutmap', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v1.5 review
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
@@ -54113,8 +55008,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
-      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, keyHeld: [], laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0,
+      down: {}, keyDown: {}, keyTaps: 0, keySwallowed: 0, lostKeyups: 0, keyUsed: false, keyLast: null, input: null, caps: false, capL: null,   // v1.5 gig keys
+      cardAt: 0, cardArm: 0, cardOk: {}, cardT: 0, cardRej: 0, wideHw: false };
     readPrefs();
+    if (keyUI()) askLayoutMap();
     listen(true);
     ui.show('gig', {});
     setupStage();
@@ -54130,10 +55028,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return true;
   };
   function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
-    var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
-    var cp = pf.calib && pf.calib[pf.audioProfile];
-    G.visM = !!(cp && cp.vat > 0);   // v0.8.3: the light check ran for this profile
-    G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+    var pf = prefs(), none = { audio: 0, visual: 0, visM: false };
+    G.offT = P ? P.offsets(pf, 'touch') : none; G.offK = P ? P.offsets(pf, 'keys') : G.offT;
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;   // v0.8.3: the light check ran for this profile (v1.5: for this input)
+    G.pf = pf; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
   }
   function startSession(ids) {
     readPrefs();
@@ -54146,9 +55045,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function teardown() {
     if (!G) return;
+    releaseAll(true); setLive(false);   // v1.5
     stopAudio();
     if (G.raf) cancelAnimationFrame(G.raf);
-    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT);
+    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT); clearTimeout(G.cardT);
     listen(false);
     G = null;
   }
@@ -54166,6 +55066,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function nextSong() {
     if (!G) return;
     if (G.ses.done) { finishShow(); return; }
+    disarmCard();   // v1.5
     hideBetween();
     G.chart = G.ses.startSong();
     if (auto()) { playAuto(); return; }
@@ -54173,6 +55074,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     beginCount();
   }
   function beginCount(held) {
+    setLive(true); blurFocus();   // v1.5: no PC-layout switch mid-song (GG.input defers it); Space / Enter never press a button
     var c0 = G.actx || (G.actx = audioCtx());
     if (!held && c0 && c0.state !== 'running' && c0.resume && !document.hidden) {
       var pr = null; try { pr = c0.resume(); } catch (e) { pr = null; }
@@ -54186,6 +55088,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
     }
     readPrefs();   // v0.8.3: the Drum sync toggle / calibration as of this song
+    freezeKeys();   // v1.5: the song's input (keys / touch), its timing, the key map and keycaps
     var p = performance.now(), ch = G.chart, nb = Math.min(4, Math.max(2, Math.ceil(U.clamp(4 * ch.spb, 1.6, 2.6) / ch.spb - 1e-6))), lead = nb * ch.spb;
     G.aSample = null;   // pair fresh: a sample from before the between screen / a pause would read the clock as unhealthy
     resync(p, true);
@@ -54196,7 +55099,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
     for (q2 = 0; q2 < G.held.length; q2++) G.held[q2] = null;   // v1.1 review: a restart starts with nothing held
-    G.runs.length = 0; G.ptr = {}; G.keyHeld = [];
+    G.runs.length = 0; G.ptr = {}; releaseAll(true); G.keyUsed = false;   // v1.5: a new chart: nothing key-held
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
     G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
@@ -54211,6 +55114,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     book(G.t, p);   // the first hat goes out now
     if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
+    gigHint();   // v1.5
     loop();
   }
   function bandOpts(song, at) {
@@ -54254,6 +55158,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     beginCount();
   }
   function endSong() {
+    releaseAll(); setLive(false);   // v1.5: key-held strings let go at the end; the PC-layout switch may run
     stopAudio();
     var q = GG.prefs && GG.prefs.syncP90 ? GG.prefs.syncP90(G.disp) : null;   // v0.8.3: this device's touch dispatch p90
     if (q != null) {
@@ -54277,6 +55182,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     G.autoT = setTimeout(nextSong, 30);
   }
   function pause(interrupted) {
+    if (G) { releaseAll(); setLive(false); }   // v1.5: every cause lets every key-held lane go (no stuck notes)
     if (G && G.paused && G.waking) {   // v0.8.3: hidden / paused while resume() waits for the context: stay frozen, try again
       G.waking = false; clearTimeout(G.wakeT);
       G.restart = G.restart || !!interrupted;
@@ -54295,9 +55201,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function pauseShow() {
     G.dom.pause.hidden = false;
     G.dom.pauseNote.textContent = G.restart ? 'The song starts over when you come back.' : 'The band is frozen mid-riff.';
+    var k = G.dom.pauseKeys;
+    if (keyUI()) { if (!k) k = G.dom.pauseKeys = el('p.small.dim.gig-pause-keys', { testid: 'gig-pause-keys' }, [kcap('Esc'), ' to resume']); if (!k.parentNode) G.dom.pauseNote.parentNode.insertBefore(k, G.dom.pauseNote.nextSibling); }
+    else if (k && k.parentNode) k.parentNode.removeChild(k);
   }
   function resume(restart) {
     if (!G || !G.paused) return;
+    blurFocus();   // v1.5: Space / Enter never land on a button mid-song
     G.dom.pause.hidden = true;
     if (restart || G.restart) { G.paused = false; restartSong(); return; }
     G.ctxPaused = false;
@@ -54308,7 +55218,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       G.waking = false; clearTimeout(G.wakeT);
       if (document.hidden) { G.restart = true; pauseShow(); return; }   // never un-pause a hidden page (the band is suspended)
       G.offset = G.zero + G.pauseT - performance.now() / 1000; G.aSample = null;
-      G.paused = false;
+      G.paused = false; setLive(true);
       resync(performance.now(), true);
     }
     G.waking = true;
@@ -54468,13 +55378,6 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var at = tapTime(ev.timeStamp);
     for (var i = 0; i < ls.length; i++) lift(ls[i], at);
   }
-  function onKeyUp(ev) {
-    if (!G || !strings()) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
-    var e = G.keyHeld[col(li)]; G.keyHeld[col(li)] = null;
-    lift(e, tapTime(ev.timeStamp));
-  }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
     var p = performance.now(), c = G.actx, h = G.handle;
@@ -54536,22 +55439,131 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function press(li, r) { return { li: li, n: r && r.note && (r.judgement || r.partial) && r.judgement !== 'miss' ? r.note : null }; }   // v1.1 review: what a lift lets go
   var BRIDGE = 1 / 6;
-  function tapTime(stamp) {
-    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
-    return heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);
+  function tapTime(stamp, src) {
+    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now, o = src === 'key' ? G.offK : G.offT;
+    return heardAt(s0) - G.zero - (G.sync ? 0 : o ? o.audio : 0);
+  }
+
+  /* ---- v1.5 "Desktop": gig keys (plan_contract_1.5 §4.3) ---------------------------------------------------- */
+  var CARD_ARM = 600, CTRL_BLOCK = { KeyS: 1, KeyD: 1, KeyF: 1, KeyP: 1 };
+  function askLayoutMap() { if (GG.input && GG.input.askLayoutMap) GG.input.askLayoutMap(); }
+  ui.keyLabel = function (code) {
+    askLayoutMap();
+    var I = GG.input;
+    return P.keyLabel(code, I && I.layoutMap ? I.layoutMap() : null, I && I.learned ? I.learned() : null, P.keySides(P.get(), code));
+  };
+  function kcap(text) { return el('span.kcap', text); }
+  ui.kcap = kcap;
+  function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function wideNow() { return !!(ui.wide && ui.wide()); }
+  function setLive(on) { if (GG.input && GG.input.gigLive) GG.input.gigLive(!!on); }
+  function blurFocus() { var a = document.activeElement; if (a && a !== document.body && a.blur) { try { a.blur(); } catch (e) { /* ignore */ } } }
+  function liveMode() { return G.mode === 'play' || G.mode === 'count' || G.mode === 'hold'; }
+  function keyId(ev) { return ev.code || P.codeOf(ev.key) || ''; }
+  function stampOf(ev) { var now = performance.now(), t = ev.timeStamp; return t > 0 && Math.abs(t - now) < 1000 ? t : now; }
+  function typingIn(t) { return ui.isTyping ? ui.isTyping(t) : !!(t && t.nodeType === 1 && /^(INPUT|TEXTAREA|SELECT)$/.test(t.nodeName)); }   // v1.5 review: ui.isTyping's rule
+  function confirmKey(ev, id) { return ev.key === 'Enter' || ev.key === ' ' || id === 'Space' || id === 'Enter' || id === 'NumpadEnter'; }
+  function lanesNow() { return G.chart ? Math.max(G.chart.lanes || 4, 1) : G.lanes; }
+  function freezeKeys() {
+    var I = GG.input;
+    G.kind = P.keyKind(G.seat);
+    G.kmS = { keymap: G.pf.keymap };
+    G.keymap = P.keysFor(G.kmS, G.kind, lanesNow());
+    G.input = I && I.mode ? I.mode() : 'touch';
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;
+    G.caps = G.input === 'keys';
+    G.capL = G.caps ? G.keymap.map(function (c) { return ui.keyLabel(c); }) : null;
   }
   function onKey(ev) {
-    if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
+    if (!G) return;
+    var id = keyId(ev);
+    if (G.paused) {   // (a) the pause card: Esc resumes; Enter too with nothing (or Resume) focused; the rest is native
+      var a = document.activeElement, onResume = !a || a === document.body || (a.getAttribute && a.getAttribute('data-testid') === 'btn-gig-resume');
+      if (ev.key === 'Escape' || (ev.key === 'Enter' && onResume)) {
+        ev.preventDefault(); ev.stopPropagation();
+        if (!ev.repeat && !G.waking) resume(false);
+      }
+      return;
+    }
+    if (!liveMode()) { cardKey(ev, id); return; }   // (b) cards, the setlist, results: native (+ the card arm)
+    if (ev.isComposing || ev.keyCode === 229 || typingIn(ev.target)) return;   // (c)
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); if (!ev.repeat) pause(false); return; }
+    if (ev.key === 'Tab') { ev.preventDefault(); return; }
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) {   // never a tap; no bookmark / save / find / print mid-song
+      if ((ev.ctrlKey || ev.metaKey) && CTRL_BLOCK[id]) ev.preventDefault();
+      if (ev.metaKey || ev.key === 'Meta') releaseAll();   // macOS drops the keyups of keys held under Cmd
+      return;
+    }
+    var r = P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key);   // (d)
+    if (!r) return;
     ev.preventDefault();
-    var r = tap(col(li), ev.timeStamp, false);
-    if (G.seat !== 'drums') G.keyHeld[col(li)] = press(col(li), r);
+    if (ev.repeat) return;
+    if (G.down[id]) { G.lostKeyups++; liftKey(id, ev.timeStamp); }   // still down = its keyup was lost: lift it first
+    if (ev.isTrusted) G.down[id] = 1;   // (synthetic events never wait for a keyup)
+    if (r.lane === -1) { G.keySwallowed++; return; }   // bound in this map, not on this rig (Space on a 4-string bass)
+    var li = r.lane != null ? r.lane : col(r.col);
+    G.keyLast = { code: ev.code || '', key: ev.key, lane: li, col: col(li), at: Math.round(stampOf(ev)) };
+    if (G.mode === 'hold' || !G.chart) return;   // the count-in waits for the audio clock: nothing to judge on yet
+    G.keyUsed = true; G.keyTaps++;
+    wake();
+    var res = tap(li, ev.timeStamp, 'key');
+    if (strings()) G.keyDown[id] = { lane: li, hold: press(li, res) };
   }
+  function onKeyUp(ev) {
+    if (!G) return;
+    var id = keyId(ev);
+    if (!G.paused && !liveMode()) cardKeyUp(ev, id);
+    if (!id) return;
+    delete G.down[id];
+    if (G.keyDown[id]) liftKey(id, ev.timeStamp);
+    if (!G.paused && liveMode() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key)) ev.preventDefault();
+  }
+  function liftKey(id, stamp) {
+    var e = G.keyDown[id]; if (!e) return;
+    delete G.keyDown[id];
+    for (var o in G.keyDown) if (G.keyDown[o].lane === e.lane) { if (!G.keyDown[o].hold || !G.keyDown[o].hold.n) G.keyDown[o].hold = e.hold; return; }
+    if (strings() && G.ses && G.chart && (G.mode === 'play' || G.mode === 'count')) lift(e.hold, tapTime(stamp, 'key'));
+  }
+  function releaseAll(noLift) {
+    if (!G) return;
+    if (!noLift) { var p = performance.now(); for (var id in G.keyDown) liftKey(id, p); }
+    G.keyDown = {}; G.down = {};
+  }
+  function onBlur() {
+    if (!G) return;
+    var was = liveMode() && !G.paused;
+    releaseAll();
+    if (was && (G.input === 'keys' || G.keyUsed)) pause(false);
+  }
+  function armCard(testid) {
+    if (!G) return;
+    G.cardAt = performance.now(); G.cardArm = G.cardAt + CARD_ARM; G.cardOk = {};
+    clearTimeout(G.cardT);
+    G.cardT = setTimeout(function () {
+      if (!G || !G.cardAt) return;
+      var I = GG.input, keys = (G.input || (I && I.mode ? I.mode() : 'touch')) === 'keys' || document.documentElement.classList.contains('gg-kbnav');
+      if (!keys) return;
+      var b = document.querySelector('[data-testid="' + testid + '"]');
+      if (b && !b.disabled && b.getClientRects().length) { try { b.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+    }, CARD_ARM);
+  }
+  function disarmCard() { if (G) { G.cardAt = 0; G.cardOk = {}; clearTimeout(G.cardT); } }
+  function cardKey(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (ev.repeat || stampOf(ev) < G.cardArm) { ev.preventDefault(); ev.stopPropagation(); delete G.cardOk[id]; G.cardRej++; return; }
+    G.cardOk[id] = 1;
+  }
+  function cardKeyUp(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (G.cardOk[id]) { delete G.cardOk[id]; return; }
+    ev.preventDefault(); ev.stopPropagation(); G.cardRej++;   // its keydown came before the arm (or during the song)
+  }
+
   function tap(li, stamp, touch) {
     var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
-    if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
-    var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
+    if (ok && (touch === true || touch === 'key') && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch (v1.5 D4: + key taps)
+    var at = tapTime(stamp, touch === 'key' ? 'key' : 'touch');   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
     if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return null; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
@@ -54633,12 +55645,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function onResize() { if (G && G.dom) { layout(); guard(); } }
   function layout() {
     var c = G.canvas; if (!c) return;
-    var box = c.parentNode.getBoundingClientRect();
+    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
+    G.wideHw = wideNow();   // v1.5 PC layout (B): 5w sizes .gig-hw by data-lanes; wider gems, a translucent highway
+    var hwEl = c.parentNode;
+    if (hwEl && hwEl.dataset && hwEl.dataset.lanes !== String(G.lanes)) { hwEl.dataset.lanes = String(G.lanes); hwEl.style.setProperty('--lanes', String(G.lanes)); }
+    var box = hwEl.getBoundingClientRect();
     DPR = Math.min(2, window.devicePixelRatio || 1);
     W = Math.max(200, box.width); H = Math.max(160, box.height);
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
-    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
     LOOK = ((GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15) / (G.speed || 1);   // seconds of highway visible: Easy scrolls slower; v0.6.1 note speed
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
@@ -54656,7 +55671,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var b = G.bg || (G.bg = document.createElement('canvas')), x;
     b.width = G.canvas.width; b.height = G.canvas.height;
     x = b.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
-    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c');
+    var g = x.createLinearGradient(0, 0, 0, H);
+    if (G.wideHw) { g.addColorStop(0, 'rgba(10,14,24,.35)'); g.addColorStop(0.22, 'rgba(12,17,32,.86)'); g.addColorStop(1, 'rgba(18,26,44,.92)'); }   // v1.5 B: the stage shows through the top
+    else { g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c'); }
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     for (var l = 0; l < G.lanes; l++) {
       var lx = col(l) * laneW, lc = laneColor(l);
@@ -54665,24 +55682,35 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
-      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]];
+      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]], cap = G.capL && G.capL[l];
       x.textAlign = 'center'; x.textBaseline = 'middle';
+      var capY = H - 21, nameY = cap ? H - ZONE + 6 : H - 18;
       if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
-        x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1;
-        x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key instead
+        else { x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1; }
+        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, nameY);
       } else {
-        x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
+        else { x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12); }
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, nameY);
       }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
     G.fade = fade;
   }
+  function keycap(x, cx, cy, text, lc) {
+    var big = G.wideHw, h = big ? 24 : 19;
+    x.font = (big ? '800 13px ' : '800 11px ') + FONT;
+    var w = Math.min(laneW - 12, Math.max(big ? 28 : 22, x.measureText(text).width + (big ? 16 : 12)));
+    rr(x, cx - w / 2, cy - h / 2, w, h, 5);
+    x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.12)'; x.fill(); x.lineWidth = 1.5; x.strokeStyle = lc; x.globalAlpha = 0.9; x.stroke();
+    x.globalAlpha = 1; x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, cx, cy + 1);
+  }
   function yOf(nt, t) { return hitY - (nt - t) * speed; }
   function draw(t, p) {
     var x = G.x, ch = G.chart, n = ch.notes, k, l, a, y;
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.drawImage(G.bg, 0, 0);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
     for (l = 0; l < G.lanes; l++) {   // tap flashes (v0.7.2: the kick zone flashes again when a double's second kick lands)
       a = 1 - (p - G.press[l]) / 140;
@@ -54699,7 +55727,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', G.seat === 'lead' ? 'SOLO · YOUR SPOTLIGHT' : 'SOLO · KEEP IT SIMPLE');
     if (G.seat !== 'drums') drawHeld(x, t);   // v1.1: the tails of the notes you are holding
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    var gw = G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
     x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
     for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
       var an = au[k]; if (an.t > t + LOOK + 0.05) break;
@@ -54752,7 +55780,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
       }
     }
-    x.globalAlpha = 1; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46);
+    x.globalAlpha = 1;
+    if (G.wideHw) { x.globalCompositeOperation = 'destination-out'; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); x.globalCompositeOperation = 'source-over'; }   // v1.5 B: fade to the stage
+    else { x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); }
     a = 1 - (p - G.popAt) / 520;   // judgement pop
     if (a > 0 && POP_TEXT[G.popKind]) {
       x.globalAlpha = a < 0.6 ? a / 0.6 : 1; x.fillStyle = POP_COLOR[G.popKind]; x.font = G.fonts.pop;
@@ -54827,6 +55857,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         pr ? (next ? 'Count me in' : 'Done practising') : studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
+    armCard('btn-gig-next');   // v1.5: Enter / Space from a fresh press 600 ms on (focused then, on keys)
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
   }
   function hideBetween() { if (G.dom) { G.dom.mid.hidden = true; ui.clear(G.dom.mid); } }
@@ -54853,6 +55884,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (GG.main && GG.main.sync) GG.main.sync();
     sfx(/[SAB]/.test(r.grade) ? 'cheer' : r.grade === 'D' ? 'boo' : 'tap');
     ui.show('gig-results', { result: r });
+    armCard('btn-gig-done');   // v1.5
   }
   var HEADLINE = { S: 'Legendary.', A: 'Crushed it.', B: 'Solid set.', C: 'You survived.', D: 'Rough night.' };
   function repText(r) {
@@ -54874,19 +55906,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return out;
   };
   ui.define('gig-results', {
-    kind: 'full', cls: 'gigres', sticky: true,
+    kind: 'full', cls: 'gigres', sticky: true, focus: false,   // v1.5: 55 owns focus here (btn-gig-done after the 600 ms arm)
     build: function (s, d) {
       var r = d.result, pay = r.deal === 'exposure' && !r.pay ? 'Exposure' : U.fmtMoney(r.pay || 0), rep = repText(r);
       var moments = (r.moments || []).filter(function (k) { return k !== 'solo'; }).length;
-      s.body.appendChild(el('div.gigres-head', [
+      var cols = w2(s), A = cols[0], B = cols[1];
+      A.appendChild(el('div.gigres-head', [
         el('div.grade.big.' + r.grade, { testid: 'gig-grade' }, r.grade),
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
           el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0)
             + ' · ' + moments + (moments === 1 ? ' moment' : ' moments'))])
       ]));
-      if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
+      if (r.simulated) A.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
-      s.body.appendChild(el('div.stat-grid', [
+      A.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
         el('div', [el('span.caps', 'Band\'s cut'), el('b', { testid: 'gig-cut' }, minus(r.cut || 0))]),
         el('div', [el('span.caps', 'Gas'), el('b', minus(r.gas || 0))]),
@@ -54897,13 +55930,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var net = r.deltas ? r.deltas.fund || 0 : null;
       if (net != null) {
         var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
-        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+        A.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
           .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
           .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
             + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
       }
-      if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
-      s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
+      if (rep) A.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
+      B.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
           el('div.tiny.dim', x.perfect + ' perfect · ' + x.good + ' good · ' + x.miss + ' missed · combo ' + x.maxCombo
             + (x.fills ? ' · ' + x.fills + ' fill taps' : '') + (x.holds ? ' · ' + (x.rings || 0) + ' of ' + x.holds + ' holds rang out' : ''))]),
@@ -54911,16 +55944,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       })));
       (r.lines || []).forEach(function (t) {   // v0.9: a line about another band's people is dropped (the leak net, 50_ui_core)
         var tx = r.merch && ui.isMerchLine && ui.isMerchLine(t) ? null : ui.safeLine(t, null, S());
-        if (tx) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
+        if (tx) B.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
       });
-      if (r.merch && ui.merchResult) s.body.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
+      if (r.merch && ui.merchResult) B.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
       (r.classics || []).forEach(function (id) {
         var song = GG.songs.byId(S(), id);
-        if (song) s.body.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
+        if (song) B.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
       });
       (r.reactions || []).forEach(function (x) {
         var who = ui.who(x.who);
-        s.body.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
+        B.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
       });
       s.foot.appendChild(ui.btn('.btn.primary.big.block', { testid: 'btn-gig-done', onclick: function () {
         var g = G, res = r;
@@ -54933,12 +55966,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
   });
 
+  function w2(s) {
+    if (!wideNow()) return [s.body, s.body];
+    var a = el('div.w2-a'), b = el('div.w2-b');
+    s.body.appendChild(el('div.w2', [a, b]));
+    return [a, b];
+  }
+
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
-    kind: 'full', cls: 'gig', sticky: true, live3d: true,
+    kind: 'full', cls: 'gig', sticky: true, live3d: true, focus: false,   // v1.5: 55 owns focus on the show (cards: armCard)
+    keysIn: function () { var d = G && G.dom; return !d ? null : d.pause && !d.pause.hidden ? d.pause : d.mid && !d.mid.hidden ? d.mid : null; },
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
+      s.root.addEventListener('contextmenu', function (e) { if (G && (G.input === 'keys' || (GG.input && GG.input.desk && GG.input.desk()))) e.preventDefault(); });
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
       d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),
@@ -54969,7 +56011,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     onClose: function () { if (G) { restoreScene(); teardown(); } }
   });
   function drawIdle() {
-    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(G.bg, 0, 0);
+    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
+  }
+  function still() { if (!G || !G.x || !G.bg) return; if (G.chart && G.fonts) draw((G.paused ? G.pauseT : G.t) + G.drawOff, performance.now()); else drawIdle(); }
+  function gigHint() {
+    if (!G || !G.dom) return;
+    var on = !!(G.caps && wideNow() && G.chart), h = G.dom.hint;
+    if (on && !h) h = G.dom.hint = el('div.gig-hint', { testid: 'gig-hint' }, [kcap('Esc'), ' pause']);
+    if (on && h && !h.parentNode && G.dom.hw.parentNode) G.dom.hw.parentNode.insertBefore(h, G.dom.hw.nextSibling);
+    else if (!on && h && h.parentNode) h.parentNode.removeChild(h);
   }
 
   /* ---- Setlist picker ------------------------------------------------------------------------------------- */
@@ -54981,33 +56031,35 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var st = S(), g = G.gig, size = GG.gig.setSize(st, g), ids = G.pick;
       var v = GG.gig.venue(g.venueId) || {}, deal = g.deal === 'exposure' ? 'Exposure' : g.deal === 'door' ? 'Door $' + g.pay + '/head' : U.fmtMoney(g.pay) + ' flat';
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
-      s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
+      var cols = w2(s), A = cols[0], B = cols[1];   // v1.5 PC layout (B): the night + options | the setlist (phone: both = the body)
+      A.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
       var cur = difficulty(), pf = prefs();
-      s.body.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
-      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
+      A.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
+      A.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
         return ui.btn('.btn.small.grow' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, style: 'padding:0 6px', onclick: function () {
           GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
       })));
-      s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
+      A.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
         : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
-        s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', GG.input && GG.input.desk && GG.input.desk() ? '🔊 Speaker' : '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
         var on = [pf.noFail ? 'No-fail' : null, pf.autoKick && seatOf(st) === 'drums' ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
-        s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
+        A.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
           '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
       }
+      if (keyUI()) A.appendChild(keysLegend(st, pf));   // v1.5: your keys (a computer, the PC layout, or a key pressed)
       var bo = GG.gig.setlistBonuses(st, ids);
-      s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
+      B.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
       for (var k = 0; k < size; k++) slots.appendChild(slotRow(s, k, size, ids, bo));
-      s.body.appendChild(slots);
-      s.body.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
+      B.appendChild(slots);
+      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, ui.tapWords ? ui.tapWords('Your songs · tap to add or drop') : 'Your songs · tap to add or drop'));
       var list = el('div.panel', { style: 'padding:0 12px' });
       GG.songs.best(st).forEach(function (song) {
         var at = ids.indexOf(song.id), r = song.rating || {};
@@ -55020,7 +56072,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         } }, el('div.row', [el('span.num', at >= 0 ? String(at + 1) : '+'), el('div.grow', [el('b', song.title),
           el('div.tiny.dim', 'Q ' + song.quality + ' · Groove ' + (r.groove || '?') + ' · Hook ' + (r.hook || '?') + ' · Diff ' + (r.difficulty || '?'))]), tags(song)])));
       });
-      s.body.appendChild(list);
+      B.appendChild(list);
       var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
       s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
         el('div.row', [
@@ -55036,6 +56088,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         } }, 'Start the show')]));
     }
   });
+  function keysLegend(st, pf) {
+    var seat = seatOf(st), kind = P.keyKind(seat), n = lanesOf(st), codes = P.keysFor(pf, kind, n), lefty = !!pf.lefty, items = [];
+    var strc = pf.colourblind ? STR_CB : STR_COLORS;
+    for (var c = 0; c < n; c++) {
+      var l = lefty ? n - 1 - c : c, name, colr;
+      if (kind === 'strings') { name = ['Low', '2nd', '3rd', '4th', '5th', 'Top'][P.keySlot(kind, l, n)]; colr = strc[l] || '#8899bb'; }
+      else { var L = ui.LANES && ui.LANES[C.LANES[l]]; name = L ? L.name : C.LANES[l]; colr = pf.colourblind && P.CB_COLOURS[C.LANES[l]] ? P.CB_COLOURS[C.LANES[l]] : L ? L.color : '#8899bb'; }
+      items.push(el('span.gk', [el('i.gk-dot', { style: { background: colr } }), kcap(ui.keyLabel(codes[l])), el('span', name)]));
+    }
+    return el('div.gig-keys', { testid: 'gig-keys' }, [
+      el('div.caps', 'Your keys'),
+      el('div.gk-row', items),
+      el('div.row.gk-foot', [el('span.tiny.dim.grow', [kcap('Esc'), ' pauses the song']),
+        ui.btn('.btn.ghost.small', { testid: 'gig-keys-change', onclick: function () { ui.show('settings', { tab: 'keys' }); } }, 'Change keys')])
+    ]);
+  }
   function closeOverShow() {
     ui.close('gig-set');
     for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
@@ -55139,7 +56207,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
       seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
-        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null } };   // v1.2 (Lane F)
+        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null },   // v1.2 (Lane F)
+      keys: { kind: G.kind || null, map: G.keymap || null, input: G.input, caps: !!G.caps, labels: G.capL || null, down: Object.keys(G.down),
+        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, cardAge: G.cardAt ? Math.round(performance.now() - G.cardAt) : null, restart: !!G.restart,
+      off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
+      offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
+      laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
   });
 })(window.GG);
 
@@ -55397,7 +56470,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         s.body.appendChild(tm.map);
         s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', tm.city ? tm.city.name : tm.sel),
           el('div.small.dim', ((tm.city && tm.city.blurb) || '') + (tm.km ? ' · ' + U.fmtNum(tm.km) + ' km from this stop' : '')),
-          tm.here.length ? el('div.gb-list', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
+          tm.here.length ? el('div.gb-list.w2', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No open dates in ' + (tm.city ? tm.city.name : tm.sel) + ' this week.')]));
       } else if (tab === 'map') {
         var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || homeRing(st);
@@ -55409,10 +56482,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', c ? c.name : sel),
           el('div.small.dim', (c && c.blurb || '') + (sel === W().home(st) ? '' : ' · ' + U.fmtNum(W().km(W().home(st), sel)) + ' km from home')
             + (W().cityOpen(st, sel) ? '' : ' · Not open to you yet.')),
-          here.length ? el('div.gb-list', here.map(function (l) { return listingCard(st, l, mode, pick); }))
+          here.length ? el('div.gb-list.w2', here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No gigs in ' + (c ? c.name : sel) + ' this week.')]));
       } else {
-        s.body.appendChild(list.length ? el('div.gb-list', list.map(function (l) { return listingCard(st, l, mode, pick); }))
+        s.body.appendChild(list.length ? el('div.gb-list.w2', list.map(function (l) { return listingCard(st, l, mode, pick); }))
           : el('div.gb-empty', "Nobody's booking this week. The corkboard is just a flyer for a lost cat."));
       }
       if (mode === 'view') ui.append(s.body, TB ? [el('div.caps.gb-sec', 'The rental'), TB.strip(st)] : [el('div.caps.gb-sec', 'The van'), vanStrip(st)].concat(bannedWall(st)));
@@ -58389,85 +59462,237 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var PROFILE_NAME = { speaker: '🔊 Speaker', headphones: '🎧 Headphones' };
   var BUS_NAME = { drums: ['Drums', 'your taps + the kit'], band: ['Band', 'backing + vocals'], crowd: ['Crowd', 'cheers, boos, the murmur'], sfx: ['SFX', 'UI sounds, ambience, van radio'] };
 
+  /* ---- v1.5 "Desktop": Settings > Keys, the Layout row, the key timing (plan_contract_1.5 §4.7; Lane I) ---------------- */
+  function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function wideNow() { return !!(ui.wide && ui.wide()); }
+  function keyLabel(code) { return ui.keyLabel ? ui.keyLabel(code) : P.keyLabel(code, null, GG.input && GG.input.learned ? GG.input.learned() : null); }
+  function kcap(t) { return el('span.kcap', t); }
+  var STR_SLOT = ['Low', '2nd', '3rd', '4th', '5th', 'Top'];
+  var STR_COL = ['#57c77a', '#ff6b4a', '#ffd23f', '#4f8cff', '#ff9f43', '#b98cff'], STR_CB = ['#009E73', '#D55E00', '#F0E442', '#56B4E9', '#E69F00', '#CC79A7'];
+  function slotName(kind, slot) {
+    if (kind === 'strings') return STR_SLOT[slot] + ' string';
+    var L = ui.LANES && ui.LANES[GG.contracts.LANES[slot]]; return L ? L.name : GG.contracts.LANES[slot];
+  }
+  function slotColour(kind, slot, pf, lane) {
+    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[lane >= 0 ? lane : slot];
+    var lane = GG.contracts.LANES[slot], L = ui.LANES && ui.LANES[lane];
+    return pf.colourblind && P.CB_COLOURS[lane] ? P.CB_COLOURS[lane] : L ? L.color : '#8899bb';
+  }
+  function usedSlots(kind, st) {
+    if (!st || !GG.career || !GG.career.seatOf) return null;
+    var seat = GG.career.seatOf(st); if (P.keyKind(seat) !== kind) return null;
+    var n = kind === 'strings' ? (GG.career.seatLanes ? GG.career.seatLanes(st) : 4) : Math.min(6, st.gear && st.gear.lanes >= 1 ? st.gear.lanes : 4), out = {};
+    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = l + 1;   // (the lane + 1: truthy)
+    return out;
+  }
+  function refusedText(code) {
+    if (code === 'Tab') return 'Tab is for menus — pick another key.';
+    if (/Enter$/.test(code)) return 'Enter is for menus — pick another key.';
+    if (/^F\d/.test(code)) return code + ' belongs to the browser — pick another key.';
+    var lbl = /^(Control|Alt|Meta|OS)/.test(code) ? keyLabel(code) : code === 'CapsLock' ? 'Caps Lock' : null;
+    return (lbl || 'That key') + ' can’t play a lane — pick another key.';
+  }
+  var RB = null;   // the rebind in progress { s, kind, slot, chip, label, release, startT, timer, onDown }
+  function bindMsg(text) { var m = RB && RB.s.body.querySelector('[data-testid="set-keys-msg"]'); if (m) m.textContent = text; }
+  function endBind(msg) {
+    var r = RB; if (!r) return;
+    RB = null;
+    clearTimeout(r.startT); clearTimeout(r.timer);
+    if (r.release) r.release();
+    document.removeEventListener('pointerdown', r.onDown, true);
+    if (msg == null) { r.chip.classList.remove('wait'); var k = r.chip.querySelector('.kcap'); if (k) k.textContent = r.label; return; }
+    r.s.data.keysMsg = msg;
+    if (ui.isOpen(r.s.id)) r.s.rerender();
+  }
+  function startBind(s, kind, slot, chip) {
+    if (RB && RB.chip === chip) return;
+    endBind(null);
+    var k = chip.querySelector('.kcap');
+    RB = { s: s, kind: kind, slot: slot, chip: chip, label: k ? k.textContent : '' };
+    chip.classList.add('wait'); if (k) k.textContent = 'Press a key…';
+    bindMsg('Press the new key for ' + slotName(kind, slot) + '. Esc cancels.');
+    RB.startT = setTimeout(function () { if (RB && RB.chip === chip && GG.input && GG.input.capture) RB.release = GG.input.capture(onBindKey); }, 0);
+    RB.timer = setTimeout(function () { endBind('No key pressed. Nothing changed.'); }, 8000);
+    RB.onDown = function (ev) { if (!chip.contains(ev.target)) endBind(null); };
+    document.addEventListener('pointerdown', RB.onDown, true);
+  }
+  function onBindKey(ev) {
+    if (!RB) return;
+    var code = ev.code || P.codeOf(ev.key) || '';
+    if (ev.key === 'Escape' || code === 'Escape') { endBind('Cancelled. Nothing changed.'); return; }
+    var pf = prefs(), kind = RB.kind, slot = RB.slot, old = pf.keymap[kind][slot], r = P.bindKey(pf, kind, slot, code);
+    if (r.refused) { bindMsg(refusedText(code)); return; }   // the chip keeps waiting
+    P.set({ keymap: r.keymap });
+    var msg = slotName(kind, slot) + ' is now ' + keyLabel(code) + '.';
+    if (r.swapped != null) msg = 'Swapped: ' + slotName(kind, r.swapped) + ' is now ' + keyLabel(old) + '. ' + msg;
+    endBind(msg);
+  }
+  function keysSection(s, d, pf, st, wide) {
+    var seat = st && GG.career && GG.career.seatOf ? GG.career.seatOf(st) : 'drums';
+    var kind = P.KEY_KINDS.indexOf(d.keysKind) >= 0 ? d.keysKind : P.keyKind(seat), map = pf.keymap[kind], used = usedSlots(kind, st);
+    var wrap = el('div.set-keys', { id: 'set-keys', testid: 'set-keys' }), A = wrap, B = wrap;
+    if (wide) { A = el('div.w2-a'); B = el('div.w2-b'); }
+    wrap.appendChild(el('div.caps.set-sec', 'Keys'));
+    A.appendChild(el('p.small.dim', kind === 'drums' ? 'Left hand on A S D F, thumb on Space, little finger on Shift. Pick a drum, then press its new key.'
+      : 'One map for bass, rhythm and lead, low string first. Pick a string, then press its new key.'));
+    A.appendChild(el('div.set-seg', [['drums', '🥁 Drums'], ['strings', '🎸 Strings']].map(function (x) {
+      var on = kind === x[0];
+      return btn('.btn.small' + (on ? '.primary' : ''), { testid: 'set-keys-kind-' + x[0], 'aria-pressed': on ? 'true' : 'false',
+        onclick: function () { endBind(null); s.data.keysKind = x[0]; s.data.keysMsg = ''; s.rerender(); } }, x[1]);
+    })));
+    A.appendChild(el('div.set-keys-chips', map.map(function (code, slot) {
+      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf, used && used[slot] ? used[slot] - 1 : -1);
+      var chip = btn('.set-key-chip' + (dim ? '.dim' : ''), { testid: 'set-key-' + kind + '-' + slot, style: { borderColor: c },
+        'aria-label': name + ': ' + keyLabel(code) + '. Press to change.' }, [el('i.sk-dot', { style: { background: c } }), el('span.sk-name', name), kcap(keyLabel(code))]);
+      chip.onclick = function () { startBind(s, kind, slot, chip); };
+      return chip;
+    })));
+    A.appendChild(el('p.small.set-keys-msg', { testid: 'set-keys-msg', 'aria-live': 'polite' }, d.keysMsg || ''));
+    A.appendChild(el('p.tiny.dim', { testid: 'set-keys-pos' }, 'Keys go by their position on the keyboard, so A S D F is the same spot on any layout. Esc, Tab and Enter stay for the menus.'));
+    var shift = P.KEY_KINDS.some(function (k) { return pf.keymap[k].some(function (c) { return /^Shift/.test(c); }); });
+    if (shift) A.appendChild(el('p.tiny.amber', { testid: 'set-keys-sticky' }, 'On Windows, Shift pressed five times in a row can pop up the Sticky Keys box. Turn its shortcut off in Settings › Accessibility › Keyboard, or put another key on that lane.'));
+    A.appendChild(btn('.btn.small', { testid: 'set-keys-reset', style: 'margin-top:6px', onclick: function () {
+      endBind(null);
+      P.set({ keymap: P.resetKeys(prefs(), kind) });
+      s.data.keysMsg = (kind === 'drums' ? 'Drum' : 'String') + ' keys are back to the defaults.';
+      s.rerender();
+    } }, 'Reset ' + (kind === 'drums' ? 'drum' : 'string') + ' keys'));
+    B.appendChild(el('div.panel.set-keys-timing', { testid: 'set-keys-timing' }, [
+      el('b', 'Key timing'),
+      el('div.tiny.dim', 'With ' + syncName() + ' on (the default), the light check is the one that lines up your keys.')
+    ].concat(P.PROFILES.map(function (p) {
+      var k = pf.calibKb[p];
+      return el('div.small', { data: { profile: p } }, PROFILE_NAME[p] + ': click test ' + (k.at ? msText(k.audio) + ' ✓' : 'not tested yet')
+        + ' · light check ' + (k.vat ? msText(k.visual) + ' ✓' : 'not tested yet'));
+    })).concat([btn('.btn.small', { testid: 'set-calibrate-keys', style: 'margin-top:6px', onclick: function () {
+      endBind(null);
+      ui.show('calib', { profile: pf.audioProfile, input: 'keys', docked: wideNow() });
+    } }, '⌨ Key timing')])));
+    if (wide) wrap.appendChild(el('div.w2', [A, B]));
+    return wrap;
+  }
+  function rail(s, keys) {
+    var tabs = [['play', 'Play'], keys ? ['keys', 'Keys'] : null, ['audio', 'Audio + timing'], ['look', 'Look + feel'], ['saves', 'Saves']].filter(Boolean);
+    return el('nav.set-rail', tabs.map(function (t) {
+      return btn('.btn.ghost.small.set-rail-btn', { testid: 'set-rail-' + t[0], onclick: function () {
+        var x = s.body.querySelector('#set-' + t[0]); if (x) { try { x.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ } }
+      } }, t[1]);
+    }));
+  }
+  function rebuild() { if (RB) return; var e = ui.get && ui.get('settings'); if (e) e.rerender(); }
+  GG.on('ui:wide', rebuild);
+  GG.on('input:mode', rebuild);
+  GG.on('input:layoutmap', rebuild);   // v1.5 review: the keycap names landed (AZERTY / QWERTZ)
+  GG.on('ui:stack', function () {
+    var c = ui.get && ui.get('calib'), st = ui.get && ui.get('settings');
+    if (c && st && ui.top() === 'calib' && c.data && c.data.docked && wideNow()) st.root.classList.remove('hidden');
+  });
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-set-keys-css')) {
+    var kss = document.createElement('style'); kss.id = 'gg-set-keys-css';
+    kss.textContent = [
+      '.set-keys-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0 6px; }',
+      '.set-key-chip { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--line);',
+      '  background: rgba(10, 14, 24, .6); color: var(--text, #fff); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }',
+      '.set-key-chip.dim { opacity: .55; }',
+      '.set-key-chip.wait { border-style: dashed; }',
+      '.set-key-chip .sk-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }',
+      '.set-key-chip .sk-name { flex: 1 1 auto; min-width: 0; }',
+      '.set-keys-msg { min-height: 1.4em; margin: 4px 0; }',
+      '.set-keys-timing { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }'
+    ].join('\n');
+    document.head.appendChild(kss);
+  }
+
   /* ---- Settings screen ---------------------------------------------------------------------------------- */
   ui.define('settings', {
     kind: 'full',
+    onClose: function () { endBind(null); },   // v1.5: a rebind never outlives the screen (its capture slot goes back)
     build: function (s, d) {
       var pf = prefs(), st = GG.state, A = GG.audio;
-      ui.append(s.body, [el('div.back-row', [btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
+      var wide = wideNow(), body = wide ? el('div.set-main') : s.body;
+      ui.append(body, [el('div.back-row', [btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
         el('div', [el('div.caps', 'Garage to Glory'), el('h1.display', 'Settings')])])]);
 
       var cd = GG.difficulty ? GG.difficulty.of(st) : 'normal', ct = GG.difficulty ? GG.difficulty.text(cd) : { name: cd, blurb: '' };
-      s.body.appendChild(sec('Career'));
-      s.body.appendChild(row(st ? 'Career difficulty: ' + ct.name + ' 🔒' : 'Career difficulty', st ? 'Locked for this career. ' + ct.blurb : 'Chill, Normal or Brutal: you pick it when you start a new career.', null, 'set-career-diff'));
+      body.appendChild(sec('Career'));
+      body.appendChild(row(st ? 'Career difficulty: ' + ct.name + ' 🔒' : 'Career difficulty', st ? 'Locked for this career. ' + ct.blurb : 'Chill, Normal or Brutal: you pick it when you start a new career.', null, 'set-career-diff'));
 
-      s.body.appendChild(sec('Play', 'set-play'));
+      body.appendChild(sec('Play', 'set-play'));
       var gd = GG.gig && GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[pf.gigDifficulty] ? pf.gigDifficulty : 'easy';
-      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
-      s.body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
-      s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
-      s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
-      s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
+      body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
+      body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
+      body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
+      body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
+      body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
       var strSeat = !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums');   // v1.1: a string seat has no kick lane
-      if (!strSeat) s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
-      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
-      s.body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
+      if (!strSeat) body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
+      body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
+      body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
         : "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
-      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
+      if (st && (st.songs || []).length) body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
 
-      s.body.appendChild(sec('Audio + timing', 'set-audio'));
-      s.body.appendChild(row('Listening on', 'Bluetooth adds delay: each profile keeps its own calibration.', null));
-      s.body.appendChild(seg(s, 'audioProfile', P.PROFILES.map(function (p) { return [p, PROFILE_NAME[p], p]; }), 'set-profile-', pf.audioProfile));
+      var keys = keyUI();
+      if (keys) body.appendChild(keysSection(s, d, pf, st, wide));
+
+      body.appendChild(sec('Audio + timing', 'set-audio'));
+      body.appendChild(row('Listening on', 'Bluetooth adds delay: each profile keeps its own calibration.', null));
+      body.appendChild(seg(s, 'audioProfile', P.PROFILES.map(function (p) { return [p, PROFILE_NAME[p], p]; }), 'set-profile-', pf.audioProfile));
       var c = pf.calib[pf.audioProfile];
-      s.body.appendChild(row('Calibration', c.at ? 'Taps ' + msText(c.audio) + ' · eyes ' + msText(c.visual) : 'Not calibrated yet on this profile.',
+      body.appendChild(row('Calibration', c.at ? 'Taps ' + msText(c.audio) + ' · eyes ' + msText(c.visual) : 'Not calibrated yet on this profile.',
         btn('.btn.small', { testid: 'set-calibrate', onclick: function () { ui.show('calib', { profile: pf.audioProfile }); } }, c.at ? 'Redo' : 'Calibrate')));
-      if (A && A.isMuted) s.body.appendChild(row('Sound', null, btn('.btn.small.set-toggle' + (A.isMuted() ? '' : '.primary'), { testid: 'set-muted',
+      if (A && A.isMuted) body.appendChild(row('Sound', null, btn('.btn.small.set-toggle' + (A.isMuted() ? '' : '.primary'), { testid: 'set-muted',
         onclick: function () { A.toggleMuted(); s.rerender(); } }, A.isMuted() ? 'Off' : 'On')));
       if (A && typeof A.setVolume === 'function' && typeof A.getVolume === 'function') {   // lane A's mixer
         ((GG.contracts && GG.contracts.MIX_BUSES) || ['drums', 'band', 'crowd', 'sfx']).forEach(function (bus) {
           var v = A.getVolume(bus); v = v == null ? 1 : v;
           var n = BUS_NAME[bus] || [bus, ''];
-          s.body.appendChild(el('div.set-row', { style: 'flex-wrap:wrap' }, [el('div.lbl', [el('b', n[0]), el('span', n[1])]),
+          body.appendChild(el('div.set-row', { style: 'flex-wrap:wrap' }, [el('div.lbl', [el('b', n[0]), el('span', n[1])]),
             el('input.set-slider', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(v * 100), testid: 'set-mix-' + bus, 'aria-label': n[0] + ' volume',
               oninput: function (e) { try { A.setVolume(bus, (+e.target.value) / 100); } catch (err) { /* ignore */ } } })]));
         });
       }
       if (A && typeof A.setMetronome === 'function' && typeof A.metronome === 'function') {
         var mo = !!A.metronome();
-        s.body.appendChild(row('Metronome', 'A click under the sequencer while you write.', btn('.btn.small.set-toggle' + (mo ? '.primary' : ''), { testid: 'set-metronome',
+        body.appendChild(row('Metronome', 'A click under the sequencer while you write.', btn('.btn.small.set-toggle' + (mo ? '.primary' : ''), { testid: 'set-metronome',
           'aria-pressed': mo ? 'true' : 'false', onclick: function () { A.setMetronome(!mo); s.rerender(); } }, mo ? 'On' : 'Off')));
       }
       if (A && typeof A.applySettings === 'function') {   // country brushed snare (off = ghost notes)
         var br = (GG.save && GG.save.settings && GG.save.settings().brushes) !== false;
-        s.body.appendChild(row('Brushes', 'Country snare: brushes, or ghost notes when off.', btn('.btn.small.set-toggle' + (br ? '.primary' : ''), { testid: 'set-brushes',
+        body.appendChild(row('Brushes', 'Country snare: brushes, or ghost notes when off.', btn('.btn.small.set-toggle' + (br ? '.primary' : ''), { testid: 'set-brushes',
           'aria-pressed': br ? 'true' : 'false', onclick: function () { GG.prefs.set({ brushes: !br }); s.rerender(); } }, br ? 'On' : 'Off')));
       }
 
-      s.body.appendChild(sec('Look + feel', 'set-look'));
-      s.body.appendChild(row('Graphics', 'Auto picks the sharpness and backs off when frames run slow. Low saves battery: fewer pixels, a smaller crowd.', null));
-      s.body.appendChild(seg(s, 'graphics', [['auto', 'Auto', 'auto'], ['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics, 'set-gfx'));
-      s.body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
-      if (pf.colourblind) s.body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
+      body.appendChild(sec('Look + feel', 'set-look'));
+      body.appendChild(row('Graphics', 'Auto picks the sharpness and backs off when frames run slow. Low saves battery: fewer pixels, a smaller crowd.', null));
+      body.appendChild(seg(s, 'graphics', [['auto', 'Auto', 'auto'], ['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics, 'set-gfx'));
+      body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
+      if (pf.colourblind) body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
         return el('span.tag', { style: { background: P.CB_COLOURS[l], color: '#111', flex: '1 1 0', textAlign: 'center' } }, (ui.LANES && ui.LANES[l] ? ui.LANES[l].name : l));
       })));
-      s.body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
-      s.body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
-      s.body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
-      s.body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
-      s.body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));
+      body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
+      body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
+      body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
+      body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
+      body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));
+      if (keys) {   // v1.5 (D9): Auto = the PC layout on a computer with a big window; Phone / PC force either
+        body.appendChild(row('Layout', 'Auto uses the PC layout on a computer with a big window. Never mid-song.', null, 'set-layout'));
+        body.appendChild(seg(s, 'layout', [['auto', 'Auto', 'auto'], ['phone', 'Phone', 'phone'], ['wide', 'PC', 'wide']], 'set-layout-', pf.layout));
+      }
 
-      s.body.appendChild(sec('Saves'));
-      s.body.appendChild(el('div.row', [
+      body.appendChild(sec('Saves', 'set-saves'));
+      body.appendChild(el('div.row', [
         btn('.btn.grow', { testid: 'set-save-load', onclick: function () { ui.show('load'); } }, 'Slots'),
         btn('.btn.grow', { testid: 'set-save-backup', disabled: !st, onclick: function () { ui.show('code', { mode: 'backup' }); } }, 'Back up'),
         btn('.btn.grow', { testid: 'set-save-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
       ]));
-      s.body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
+      body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'set-done', onclick: function () { ui.close(s.id); } }, 'Done'));
+      if (wide) s.body.appendChild(el('div.set-wide', [rail(s, keys), body]));
       if (d && d.tab && !d._scrolled) {
         d._scrolled = true;
         var target = s.body.querySelector('#set-' + d.tab);
-        if (target) setTimeout(function () { try { s.body.scrollTop = target.offsetTop - 12; } catch (e) { /* ignore */ } }, 0);
+        if (target && wide) setTimeout(function () { try { target.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ } }, 0);
+        else if (target) setTimeout(function () { try { s.body.scrollTop = target.offsetTop - 12; } catch (e) { /* ignore */ } }, 0);
       }
     }
   });
@@ -58475,12 +59700,28 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- Calibration ------------------------------------------------------------------------------------------ */
   var N_CLICKS = 8, GAP = 600, LEAD = 1000;
   var K = null;   // the test in progress
-  var dbg = { open: false, step: null, clicks: [], taps: [], audio: null, visual: null, profile: null, clock: null };
+  var dbg = { open: false, step: null, clicks: [], taps: [], audio: null, visual: null, profile: null, clock: null, input: 'touch' };
   function stopTest() {
     if (!K) return;
     K.timers.forEach(clearTimeout); K.timers = [];
     K.running = false;
+    if (K.release) { K.release(); K.release = null; }   // v1.5: the key test's capture slot
   }
+  function keyTest(s) {
+    var k = K;
+    k.timers.push(setTimeout(function () {
+      if (K !== k || !k.running || !GG.input || !GG.input.capture) return;
+      k.release = GG.input.capture(function (ev) {
+        if (K !== k || !k.running) return;
+        if (ev.key === 'Escape' || ev.code === 'Escape') { stopTest(); if (ui.isOpen('calib')) s.rerender({ profile: s.data.profile, first: s.data.first, input: 'keys', docked: s.data.docked }); return; }
+        var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
+        k.taps.push(t);
+        var pad = s.body && s.body.querySelector('[data-testid="calib-pad"]');
+        if (pad) { pad.classList.add('hit'); setTimeout(function () { pad.classList.remove('hit'); }, 90); }
+      });
+    }, 0));   // next tick: the Enter / Space that started the test is already down, so it never counts
+  }
+  function inputOf(d) { return d && (d.input === 'keys' || d.input === 'touch') ? d.input : GG.input && GG.input.mode ? GG.input.mode() : 'touch'; }
   function ctxNow() { try { return GG.audio && GG.audio.context ? GG.audio.context() : null; } catch (e) { return null; } }
   function beep(c, when, hi) {
     var o = c.createOscillator(), g = c.createGain();
@@ -58490,7 +59731,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function startAudioTest(s) {
     stopTest();
-    K = { kind: 'audio', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    K = { kind: 'audio', clicks: [], taps: [], timers: [], running: true, n: 0, input: inputOf(s.data) };
     try { if (GG.audio && GG.audio.unlock) GG.audio.unlock(); } catch (e) { /* ignore */ }
     var c = ctxNow(), p0 = performance.now(), i;
     if (c && c.state !== 'running' && c.resume) { try { c.resume(); } catch (e) { /* ignore */ } }
@@ -58507,11 +59748,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     K.clicks.forEach(function (t, k) { K.timers.push(setTimeout(function () { K.n = k + 1; count(s); }, Math.max(0, t - performance.now()))); });
     K.timers.push(setTimeout(function () { finishTest(s); }, K.clicks[N_CLICKS - 1] - p0 + 700));
     dbg.clicks = K.clicks.slice(); dbg.taps = K.taps;
-    s.rerender({ step: 'audio', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+    s.rerender(carry(s, { step: 'audio', audio: s.data.audio }));
+    if (K.input === 'keys') keyTest(s);   // v1.5
   }
+  function carry(s, o) { return Object.assign({ profile: s.data.profile, first: s.data.first, input: s.data.input, docked: s.data.docked }, o); }
   function startVisualTest(s) {
     stopTest();
-    K = { kind: 'visual', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    K = { kind: 'visual', clicks: [], taps: [], timers: [], running: true, n: 0, input: inputOf(s.data) };
     var p0 = performance.now();
     for (var i = 0; i < N_CLICKS; i++) (function (k) {
       K.timers.push(setTimeout(function () {
@@ -58523,7 +59766,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     })(i);
     K.timers.push(setTimeout(function () { finishTest(s); }, LEAD + (N_CLICKS - 1) * GAP + 700));
     dbg.clicks = []; dbg.taps = K.taps;
-    s.rerender({ step: 'visual', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+    s.rerender(carry(s, { step: 'visual', audio: s.data.audio }));
+    if (K.input === 'keys') keyTest(s);   // v1.5
   }
   function count(s) { var e = s.body && s.body.querySelector('[data-testid="calib-count"]'); if (e && K) e.textContent = (K.kind === 'audio' ? 'Click ' : 'Flash ') + Math.min(K.n, N_CLICKS) + ' of ' + N_CLICKS; }
   function finishTest(s) {
@@ -58532,12 +59776,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     stopTest();
     if (kind === 'audio') r.lat = K.lat || 0;
     dbg[kind] = r;
-    var d = { profile: s.data.profile, first: s.data.first, audio: s.data.audio, visual: s.data.visual };
+    var d = carry(s, { audio: s.data.audio, visual: s.data.visual });
     d[kind] = r; d.step = kind + 'Done';
     if (ui.isOpen('calib')) s.rerender(d);
   }
   function padTap(ev) {
-    if (!K || !K.running) return;
+    if (!K || !K.running || K.input === 'keys') return;   // v1.5: the key test counts keys only
     if (ev.cancelable) ev.preventDefault();
     var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
     K.taps.push(t);
@@ -58548,7 +59792,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     build: function (s, d) {
       var pf = prefs(), profile = P.PROFILES.indexOf(d.profile) >= 0 ? d.profile : pf.audioProfile, step = d.step || 'intro';
       d.profile = profile;
-      dbg.open = true; dbg.step = step; dbg.profile = profile;
+      var input = d.input = inputOf(d), keys = input === 'keys';   // v1.5: the input being calibrated (starts on GG.input.mode())
+      dbg.open = true; dbg.step = step; dbg.profile = profile; dbg.input = input;
+      s.root.classList.toggle('calib-docked', !!(d.docked && wideNow()));   // v1.5 B: over Settings > Keys' timing column
       function skip() { stopTest(); set({ calibSeen: true }); ui.close(s.id); }
       ui.append(s.body, [el('div.back-row', [d.first ? null : btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { stopTest(); ui.close(s.id); } }, '←'),
         el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
@@ -58557,9 +59803,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (" + syncName() + "); the click test is for classic timing."),
           el('div.caps.set-sec', 'Calibrating for'),
           el('div.set-seg', P.PROFILES.map(function (p) {
-            return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
+            return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender(carry(s, { profile: p })); } }, PROFILE_NAME[p]);
           })),
-          el('p.small.dim', { style: 'margin-top:10px' }, 'Step 1: tap the pad on each of eight clicks. Step 2: tap when the light flashes. Takes twenty seconds.'),
+          keyUI() ? el('div.caps.set-sec', 'Playing on') : null,   // v1.5: touch and keys keep their own timing
+          keyUI() ? el('div.set-seg', [['touch', '👆 Touch'], ['keys', '⌨ Keys']].map(function (x) {
+            return btn('.btn.small' + (x[0] === input ? '.primary' : ''), { testid: 'calib-input-' + x[0], 'aria-pressed': x[0] === input ? 'true' : 'false',
+              onclick: function () { s.rerender(carry(s, { input: x[0] })); } }, x[1]);
+          })) : null,
+          el('p.small.dim', { style: 'margin-top:10px' }, keys ? 'Step 1: press any key on each of eight clicks. Step 2: press a key when the light flashes. Esc stops. Takes twenty seconds.'
+            : 'Step 1: tap the pad on each of eight clicks. Step 2: tap when the light flashes. Takes twenty seconds.'),
+          keys ? el('p.small.dim', 'With ' + syncName() + ' on (the default), the light check is the one that lines up your keys.') : null,
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
@@ -58568,9 +59821,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return;
       }
       if (step === 'audio' || step === 'visual') {
-        var pad = el('div.calib-pad', { testid: 'calib-pad', onpointerdown: padTap }, step === 'audio' ? 'Tap on the click' : 'Tap on the flash');
+        var pad = el('div.calib-pad', { testid: 'calib-pad', onpointerdown: padTap }, keys ? (step === 'audio' ? 'Press a key on the click' : 'Press a key on the flash') : step === 'audio' ? 'Tap on the click' : 'Tap on the flash');
         ui.append(s.body, [
-          el('p.screen-sub', step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
+          el('p.screen-sub', keys ? (step === 'audio' ? 'Listen. Press any key exactly on each click (Space works well). Esc stops.' : 'Watch the light. Press a key the moment it flashes. Esc stops.')
+            : step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
           step === 'visual' ? el('div.calib-light', { testid: 'calib-light', onpointerdown: padTap }) : null,
           el('div.caps.center', { testid: 'calib-count', style: 'margin:10px 0' }, 'Get ready…'),
           pad
@@ -58581,7 +59835,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var a = d.audio, v = d.visual;
       function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
       ui.append(s.body, [
-        el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
+        el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile] + (keys ? ' · keys' : '')), el('div', line(a, keys ? 'You hear + press' : 'You hear + tap')), v ? el('div', line(v, keys ? 'You see + press' : 'You see + tap')) : null]),
         el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: ' + syncName() + ' lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
         a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). " + syncName() + (strNow() ? ' keeps your notes' : ' keeps your drums') + " with the band; watch the highway rather than your ears.") : null
       ]);
@@ -58591,9 +59845,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var o = { at: Date.now() };
         if (a && a.ok) o.audio = a.offset;
         if (v && v.ok) o.visual = v.offset;
-        P.setCalib(profile, o);
+        if (keys) { delete o.at; P.setCalib(profile, o, 'keys'); }   // v1.5: calibKb (at only with the click test, vat only with the light check)
+        else P.setCalib(profile, o);
         ui.close(s.id);
-        ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. '   // v0.9: first launch has no band yet
+        ui.toast((keys ? 'Key timing set for ' : 'Calibrated for ') + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. '   // v0.9: first launch has no band yet
           + (GG.state ? ui.fill('{deadpan} gives a slow thumbs-up.', GG.state) : 'Somebody at the back gives a slow thumbs-up.'));
       } }, 'Save calibration'));
       foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone') startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
@@ -58601,7 +59856,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     },
     onClose: function () { stopTest(); K = null; dbg.open = false; dbg.step = null; GG.emit('settings:changed', { keys: ['calib'] }); }
   });
-  GG.registerDebug('calib', function () { return { open: dbg.open, step: dbg.step, profile: dbg.profile, clock: dbg.clock, clicks: dbg.clicks.slice(), taps: (dbg.taps || []).slice(), audio: dbg.audio, visual: dbg.visual }; });
+  GG.registerDebug('calib', function () { return { open: dbg.open, step: dbg.step, profile: dbg.profile, clock: dbg.clock, clicks: dbg.clicks.slice(), taps: (dbg.taps || []).slice(), audio: dbg.audio, visual: dbg.visual,
+    input: dbg.input, capturing: !!(K && K.release) }; });   // v1.5: + input
 
   var firstDone = false;
   GG.on('screen:open', function (p) {
@@ -59334,12 +60590,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
+    E.snap = lookSnap();
   }
+  function lookSnap() { try { return JSON.stringify([E.look, E.stage, E.kit, E.gearLook || null]); } catch (e) { return ''; } }
+  ui.lookDirty = function () { return !!(E && E.snap != null && lookSnap() !== E.snap); };
   function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'The band'; }
 
   /* ---- Screen ------------------------------------------------------------------------------------------------------ */
   ui.define('look', {
     kind: 'full', cls: 'lookx',
+    back: function () {
+      if (!ui.lookDirty()) { cancel(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === 'look') cancel(); });
+    },
     build: function (s) {
       if (!E) init({ mode: GG.state ? 'career' : 'new' });
       E.s = s;
@@ -59728,7 +60991,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (GG.career.seatOf(st) !== 'drums') { seatShop(s, st); return; }   // v1.1: your seat's line
       s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
-      ui.append(s.body, el('div.stack', [
+      ui.append(s.body, ui.w2(el('div.stack', [
         el('div.panel.warm.shop-now', { testid: 'gear-now' }, [el('div.caps', 'On the riser now'), el('div.shop-big', kd.name || 'A kit'),
           el('div.small.dim', [g.lanes + ' lanes' + (g.doubleKick ? ' · double kick' : '') + (extra.length ? ' · ' + extra.join(', ') : ''),
             ' · the kit tier changes how everything sounds']),
@@ -59766,7 +61029,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         el('div.caps', 'Song sections'),
         el('div.stack.tight', [sectionRow(st, 'outro'), sectionRow(st, 'solo')]),
         el('p.tiny.faint.center', 'No gong. Not now, not ever. The Global Gong is an award, not a drum.')
-      ]));
+      ]), 3));
       s.foot.appendChild(btn('.btn.block', { testid: 'btn-gear-done', onclick: function () { ui.close(s.id); } }, 'Back to the kit'));
     },
     onClose: function () { ui.clearToasts(); }
@@ -59777,7 +61040,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var seat = GG.career.seatOf(st), inst = GG.career.tokenValue(st, 'instrument'), lanes = GG.career.seatLanes(st), runs = GG.career.seatRuns(st), g = st.gear;
     var kd = SH().kitDef(g.quality) || {}, items = SH().gearItems(st), mine = items.filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
     s.setTitle(ui.cap(inst) + ' shop', 'PAWN SHOP ROW · ' + street(st));
-    ui.append(s.body, el('div.stack', [
+    ui.append(s.body, ui.w2(el('div.stack', [
       el('div.panel.warm.shop-now', { testid: 'gear-now', data: { seat: seat, lanes: String(lanes), runs: runs ? '1' : '0' } }, [el('div.caps', 'Your rig now'), el('div.shop-big', SH().kitName(st, kd) || 'An amp'),
         el('div.small.dim', [lanes + ' lanes on your highway' + (runs ? ' · runs' : '') + (SH().whammy(st) ? ' · whammy' : '') + (mine.length ? ' · ' + mine.join(', ') : ''),
           ' · the amp tier changes how the whole band sounds']),
@@ -59818,7 +61081,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.caps', 'Song sections'),
       el('div.stack.tight', [sectionRow(st, 'outro'), sectionRow(st, 'solo')]),
       el('p.tiny.faint.center', 'Every price matches the drum shop. The drummer checked.')
-    ]));
+    ]), 3));
     s.foot.appendChild(btn('.btn.block', { testid: 'btn-gear-done', onclick: function () { ui.close(s.id); } }, 'Back to your rig'));
   }
 
@@ -61199,7 +62462,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.tut-head', [who ? ui.avatar(who, 'sm') : el('span', { style: 'font-size:18px' }, '🎬'),
         el('span.tut-who', { testid: 'tut-who' }, who ? who.short + (who.nick && who.nick !== who.short ? ' · ' + who.nick : '') : (ui.band(st) || {}).name || 'The band'),
         el('span.tut-n', (cur.i + 1) + '/' + n)]),
-      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, step.text),
+      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, ui.tapWords ? ui.tapWords(step.text) : step.text),   // v1.5 review: 'click' on a computer
       el('div.tut-btns', [skip, next])]);
     ui.append(layer, [ring, card]);
     bindAdvance(step);
@@ -61525,6 +62788,130 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 })(window.GG);
 
 </script>
+<script>/* 5w_ui_wide.js */
+(function (GG) {
+  if (typeof document === 'undefined') return;
+  var CSS = [
+    'html.gg-desk * { scrollbar-width: thin; scrollbar-color: #34426a transparent; }',
+    'html.gg-desk ::-webkit-scrollbar { width: 10px; height: 10px; }',
+    'html.gg-desk ::-webkit-scrollbar-track { background: transparent; }',
+    'html.gg-desk ::-webkit-scrollbar-thumb { background: #34426a; border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }',
+    'html.gg-desk button:not(:disabled):hover { filter: brightness(1.14); }',
+    'html.gg-desk button:not(:disabled):active { filter: brightness(.92); }',
+    'html.gg-desk .seq-grid .cell:hover { filter: brightness(1.35); }',
+    'html.gg-desk .tab:not(.on):hover { color: var(--text); }',
+
+    'html.gg-wide .hud-bar { max-width: 1120px; margin: 0 auto; }',
+    'html.gg-wide .hud-bar::after { content: ""; order: 8; flex: 0 0 100%; height: 0; margin-top: -4px; }',
+    'html.gg-wide .hud-cal { flex: 0 1 auto; margin: 0 auto; max-width: 100%; padding: 3px 14px; }',
+    'html.gg-wide .dock { left: max(16px, calc((100% - 1120px) / 2)); right: max(16px, calc((100% - 1120px) / 2)); align-items: center; }',
+    'html.gg-wide .dock > .btn { width: 480px; max-width: 100%; }',
+
+    'html.gg-wide .sheet { left: max(0px, calc((100% - 1120px) / 2)); right: max(0px, calc((100% - 1120px) / 2)); }',
+    'html.gg-wide .sheet-grip { display: none; }',
+    'html.gg-wide .sheet-head { padding: 14px 16px 8px 24px; min-height: 64px; }',
+    'html.gg-wide .sheet-head .sub { display: inline-block; margin: 0 12px 0 0; vertical-align: 3px; }',
+    'html.gg-wide .sheet-body { padding: 4px 24px 16px; }',
+    'html.gg-wide .sheet-foot { padding: 12px 24px 16px; justify-content: flex-end; }',
+    'html.gg-wide .sheet-foot > .btn.block, html.gg-wide .sheet-foot > .btn.primary { width: auto; flex: 0 1 420px; }',
+    'html.gg-wide .sheet-foot > .kb-hints { order: -1; flex: 0 1 auto; width: auto; margin-right: auto; text-align: left; }',
+    'html.gg-wide .gigset .sheet-foot > div:has(> [data-testid="btn-gig-start"]) { flex: 0 1 520px !important; }',
+    'html.gg-wide .modal { max-width: 420px; }',
+    '@media (max-height: 800px) { html.gg-wide .sheet-head { padding-top: 6px; padding-bottom: 2px; min-height: 52px; }'
+      + ' html.gg-wide .sheet-foot { padding-top: 8px; padding-bottom: 10px; }'
+      + ' html.gg-wide .sheet-foot > .btn.primary, html.gg-wide .sheet-foot > .btn.block { min-height: 44px; padding-top: 0; padding-bottom: 0; } }',
+
+    'html.gg-wide .w2 { display: flow-root; --w2a: calc(50% - 12px); }',
+    'html.gg-wide .w2 > .w2-a { float: left; clear: left; width: var(--w2a); margin-top: 0; margin-bottom: 12px; }',
+    'html.gg-wide .w2 > .w2-b { width: calc(100% - var(--w2a) - 24px); margin-left: calc(var(--w2a) + 24px); margin-top: 0; margin-bottom: 12px; }',
+    'html.gg-wide .w2 > .w2-b.btn:not(.block) { display: flex; }',
+    'html.gg-wide .w2 > span.w2-b { display: flex; width: fit-content; }',
+    'html.gg-wide .gb-list.w2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }',
+    'html.gg-wide .gb-list.w2 > * { margin: 0; }',
+    'html.gg-wide .sheet-body > .stack.w2:has(> .acts) { --w2a: 400px; }',
+    'html.gg-wide .w2 > .acts { grid-template-columns: repeat(3, minmax(0, 1fr)); }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) { display: grid; grid-template-columns: 172px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); column-gap: 20px; align-content: start; }',
+    'html.gg-wide .sheet-body > .lt-tabs { grid-column: 1; grid-row: 1 / -1; align-self: start; position: sticky !important; top: 0 !important; padding: 0 !important; background: none !important; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) > :not(.lt-tabs) { grid-column: 2; min-width: 0; }',
+    'html.gg-wide .lt-tabs .tabs { flex-direction: column; gap: 2px; }',
+    'html.gg-wide .lt-tabs .tab { flex: 0 0 auto; min-height: 40px; padding: 0 14px; text-align: left; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; align-items: start; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > :not(.mem-card) { grid-column: 1 / -1; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > .mem-card { margin-bottom: 0; }',
+
+    'html.gg-wide .full:where(:not(.gig, .title3d, .van, .loonies, .rvset)) > .full-body,'
+      + ' html.gg-wide .full:where(:not(.gig, .title3d, .van, .loonies, .rvset)) > .full-foot { padding-left: max(16px, calc((100% - 1120px) / 2)); padding-right: max(16px, calc((100% - 1120px) / 2)); }',
+    'html.gg-wide .full:not(.seq) > .full-foot { align-items: center; }',
+    'html.gg-wide .full:not(.seq) > .full-foot > .btn.block { width: min(100%, 560px); }',
+    'html.gg-wide .full:not(.seq) > .full-foot > .kb-hints { width: 100%; }',
+    'html.gg-wide .title-wrap { max-width: 520px; margin-left: auto; margin-right: auto; }',
+    'html.gg-wide .presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }',
+
+    'html.gg-wide .full.seq .full-body.w2 { display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto repeat(8, auto) minmax(0, 1fr);'
+      + ' column-gap: 24px; row-gap: 0; align-content: stretch; overflow-y: auto; }',
+    'html.gg-wide .full.seq .full-body.w2 > .w2-a { float: none; clear: none; width: auto; grid-column: 1; margin: 0 0 8px; min-width: 0; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-head { grid-column: 1 / -1; grid-row: 1; margin: 0 -6px 4px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .w2-b { grid-column: 2; grid-row: 2 / -1; width: auto; margin: 0; min-height: 0; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-tabs { margin: 0; padding: 0; }',
+    'html.gg-wide .seq-grid[data-lanes="4"] { width: 100%; max-width: 516px; margin: 0 auto; }',
+    'html.gg-wide .seq-grid[data-lanes="5"] { width: 100%; max-width: 639px; margin: 0 auto; }',
+    'html.gg-wide .seq-grid[data-lanes="6"] { width: 100%; max-width: 762px; margin: 0 auto; }',
+    'html.gg-wide .full.seq:has(.seq-main) > .full-foot { padding-left: calc(max(16px, calc((100% - 1120px) / 2)) + 384px); }',
+    'html.gg-wide .quick-main.w2 > .qs-title { margin-bottom: 8px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach { flex: 0 0 auto; height: auto; min-height: 44px; padding: 8px 12px 8px 7px; border-radius: 16px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach .sc-line { display: block; white-space: normal; line-height: 1.35; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach .seq-tip { overflow: visible; }',
+
+    'html.gg-wide .set-wide { display: grid; grid-template-columns: 196px minmax(0, 1fr); column-gap: 28px; align-items: start; }',
+    'html.gg-wide .set-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 76px; }',
+    'html.gg-wide .set-rail > .btn { justify-content: flex-start; width: 100%; padding: 0 14px; border-color: transparent; text-transform: none; letter-spacing: .01em; font-size: 15px; }',
+    'html.gg-wide .set-main { min-width: 0; }',
+    'html.gg-wide .set-main [id^="set-"] { scroll-margin-top: 20px; }',
+    'html.gg-wide .set-keys > .w2 > .w2-b > .set-keys-timing { margin-top: 0; }',
+    'html.gg-wide .layer.calib-docked { left: auto; right: max(16px, calc((100% - 1120px) / 2)); top: 16px; bottom: 16px; width: min(440px, calc(100% - 32px)); }',
+    'html.gg-wide .layer.calib-docked > .full { border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden; }',
+    'html.gg-wide.gg-keys .back-row > [data-testid="btn-back"] { margin-right: 34px; }',
+
+    'html.gg-wide .full.gig .full-body { align-items: center; }',
+    'html.gg-wide .full.gig .gig-top { align-self: stretch; }',
+    'html.gg-wide .full.gig .gig-hw { flex: 0 0 auto; width: clamp(calc(var(--lanes, 4) * 110px), 46vw, calc(var(--lanes, 4) * 140px)); max-width: calc(100% - 32px); height: clamp(300px, 48vh, 540px); min-height: 0; max-height: none;'
+      + ' margin: 0 0 16px; padding-bottom: 0; background: transparent; border: 0; border-radius: 16px; overflow: hidden; }',
+    'html.gg-wide .full.gig .gig-hw canvas { height: 100%; }',
+    'html.gg-wide .full.gig .gig-bar, html.gg-wide .full.gig .gig-crowd { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.gig .gig-mid { left: max(16px, calc((100% - 720px) / 2)); right: max(16px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.gig .gig-hint { right: auto; bottom: calc(16px + clamp(300px, 48vh, 540px) * .42); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
+    '@media (max-width: 999px) { html.gg-wide .full.gig .gig-hint { display: none; } }',
+
+    'html.gg-wide .full.rvset .rs-bar, html.gg-wide .full.rvset .rs-banner { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.rvset .rs-panel { left: max(0px, calc((100% - 720px) / 2)); right: max(0px, calc((100% - 720px) / 2)); bottom: 16px; padding-bottom: 14px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; }',
+    'html.gg-wide .full.loonies .lo-top { align-self: center; width: min(100%, 720px); }',
+    'html.gg-wide .full.loonies .lo-card { align-self: center; width: min(calc(100% - 32px), 720px); border-radius: 18px 18px 0 0; }',
+
+    'html.gg-wide .full.van .full-body > .van-top, html.gg-wide .full.van .full-body > .van-says, html.gg-wide .full.van .full-body > .van-arrive { width: 100%; max-width: 440px; }',
+    'html.gg-wide .full.van > .full-foot { max-width: 472px; }',
+    'html.gg-wide .tw-map { width: min(100%, calc((100vh - 170px) * 100 / 72)); margin-left: auto; margin-right: auto; flex: 0 0 auto; }',
+    'html.gg-wide .layer[data-screen="tour-region"] .tw-map { width: min(100%, calc((100vh - 290px) * 100 / 72)); }',
+    'html.gg-wide .van-side { max-width: 560px; margin-left: auto; margin-right: auto; }'
+  ].join('\n');
+
+  var tag = document.getElementById('gg-wide-css');
+  if (!tag) {
+    tag = document.createElement('style'); tag.id = 'gg-wide-css'; tag.textContent = CSS;
+    (document.head || document.documentElement).appendChild(tag);
+  }
+  function last() { var h = document.head; if (h && tag.parentNode === h && h.lastElementChild !== tag) h.appendChild(tag); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(last, 0); });
+  else setTimeout(last, 0);
+  GG.registerDebug('wide', function () {
+    var c = document.documentElement.classList;
+    return { wide: c.contains('gg-wide'), desk: c.contains('gg-desk'), css: !!document.getElementById('gg-wide-css'), last: !!(document.head && document.head.lastElementChild === tag) };
+  });
+})(window.GG);
+
+</script>
 <script>/* 60_main.js */
 (function (GG) {
   var M = GG.main = GG.main || {};
@@ -61562,6 +62949,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   GG.on('ui:stack', updateInsets);
   GG.on('ui:layout', updateInsets);
+  GG.on('ui:wide', function () { lastInsets = ''; updateInsets(); });
 
   M.sync = function () {
     if (GG.state) render('syncState', GG.state);
@@ -61703,8 +63091,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       M._taught = true;
       var t0 = ui.talkers(st)[0] || (st.members && st.members[0]), mate = t0 ? ui.who(t0.id) : null;   // v0.9: a member who talks
       var who = mate ? (mate.nick || mate.short) : 'The band';
-      ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
-        : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
+      var msg = M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
+        : 'Tap the whiteboard (or the big button) to plan the week.', kc = M.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: keys / 'click' on a computer
+      ui.toast(kc ? kc.replace('the big button.', 'the big button to plan the week.') : ui.tapWords ? ui.tapWords(msg) : msg, { who: who, ms: 6500 });
     }
     if (st && ui.announceShowdown) ui.announceShowdown(st);   // v0.6: after the Monday card
   };

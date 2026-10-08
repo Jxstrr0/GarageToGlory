@@ -21,6 +21,13 @@
 // on a chip / picker edit; a v1 part renders through part.view and becomes v2 on its first grid / tweak edit; view never writes.
 // ui.show('seq', { mode, pat, screen, title, titleEn, song, index, total, fromSketch, editHint: { who, text }, onSave(entry),
 //   onJam(), onCancel() })
+// v1.5 "Desktop" (Lane N; plan_contract_1.5 §4.5): the grid on the keyboard. With GG.input.showKeyUI() (a computer, a key
+//   seen, or the PC layout; never a plain phone) the editable grid is role=grid + data-keys=own, cells role=gridcell with
+//   aria-selected and a roving tabindex from D.view.focus { l, s } (kept in D.kbFocus): ←/→ lane, ↑/↓ step, Home/End the first /
+//   last step, PgUp/PgDn ±4 steps, Space/Enter toggle through the tap path (toggleCell: the kick rule, the v2 part upgrade, the
+//   preview). Esc = the screen's back fn: a change since the screen opened (dirty(D): D.dirty, set by hand edits / recomposes /
+//   the title, and the pattern + title differ from the snapshot D._snap) asks "Leave without saving?" (Esc = Keep editing),
+//   else btn-seq-close. debug('seq').dirty.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
   // Lane look, left to right. v0.3's note highway uses the same colours and icons.
@@ -269,6 +276,8 @@
   }
   // Every edit: re-rate, keep playback in sync, keep the sketch pad saved.
   function changed(D) {
+    // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
+    D.dirty = true;
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -296,6 +305,8 @@
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -310,12 +321,14 @@
         var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
           { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
         c.style.setProperty('--lc', ui.LANES[name].color);
+        if (keys) cellKeys(c, hit, L.name + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, false);
+    if (keys) gridKeys(grid, D);
     return grid;
   }
   // Your part's grid: the v2 rows (part.view: a v1 part shows its upgrade and is never written until you edit it).
@@ -323,6 +336,8 @@
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
+    // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -330,15 +345,60 @@
       var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
       var row = [];
       for (r = 0; r < n; r++) {
-        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        var phit = GG.songs.isHit(sec.rows[r], step);
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (phit ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
         c.style.setProperty('--lc', PART_COLORS[r]);
+        if (keys) cellKeys(c, phit, (names[r] || String(r + 1)) + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, true);
+    if (keys) gridKeys(grid, D);
     return grid;
+  }
+  // v1.5 (Lane N): the grid on the keyboard. Only with GG.input.showKeyUI() (never a plain phone: the phone DOM stays 1.4's).
+  function keyGrid() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function cellKeys(c, hit, label) {
+    c.setAttribute('role', 'gridcell'); c.setAttribute('aria-selected', hit ? 'true' : 'false'); c.setAttribute('aria-label', label); c.tabIndex = -1;
+  }
+  var GRID_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], PageUp: [0, -4], PageDown: [0, 4], Home: [0, -99], End: [0, 99] };
+  function gridKeys(grid, D) {
+    var V = D.view, rows = V.cells, nL = rows[0] ? rows[0].length : 0;
+    grid.setAttribute('role', 'grid'); grid.setAttribute('data-keys', 'own'); grid.setAttribute('aria-label', 'Beat grid: arrows move, Space adds or removes');
+    var f = D.kbFocus || { l: 0, s: 0 };
+    f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
+    if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
+    function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
+    // a click / a restore lands on a cell: it becomes the roving one
+    grid.addEventListener('focusin', function (e) {
+      var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
+      if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
+      var old = cellAt(D.kbFocus.l, D.kbFocus.s);
+      if (old && old !== c) old.tabIndex = -1;
+      c.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+    });
+    grid.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      var c = e.target; if (!c.classList || !c.classList.contains('cell')) return;
+      var mv = GRID_KEYS[e.key];
+      if (mv) {
+        e.preventDefault();
+        var l = U.clamp(+c.dataset.l + mv[0], 0, nL - 1), st = U.clamp(+c.dataset.s + mv[1], 0, rows.length - 1), n = cellAt(l, st);
+        if (n && n !== c) {
+          c.tabIndex = -1; n.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+          if (ui.focusEl) ui.focusEl(n, { nav: true, preventScroll: true }); else n.focus();
+          try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+        }
+        return;
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (grid._toggle) grid._toggle(c);
+      }
+    });
   }
   // Tap toggles; dragging paints the same value (on or off) across every cell the finger crosses.
   function paintable(grid, D, isPart) {
@@ -351,6 +411,7 @@
         if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
         rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
         c.classList.toggle('on', paint.value);
+        if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
         if (paint.value && !(D.handle && D.handle.playing)) partPreview(D, pr);
         handEdit(D); changed(D);
         return;
@@ -364,17 +425,24 @@
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
+      if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
       if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       handEdit(D); changed(D);
     }
+    // One tap on a cell (a pointer press, or v1.5 Space / Enter on the focused cell): the v2 upgrade, then toggle it.
+    function start(c, id) {
+      // D16: the first edit upgrades a v1 part
+      if (isPart) partV2(D);
+      var sec = rowsOf();
+      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
+      apply(c);
+    }
+    grid._toggle = function (c) { if (!cellOf(c)) return; start(c, 'key'); paint = null; };
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
-      var sec = rowsOf();
-      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
+      start(c, e.pointerId);
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      apply(c);
     });
     grid.addEventListener('pointermove', function (e) {
       if (!paint || e.pointerId !== paint.id) return;
@@ -678,8 +746,10 @@
     ui.append(s.body, [header(s, D), meterStrip(D), coachBubble(s, D),
       V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
         el('div.qs-title', 'Start from a recipe'),
-        el('div.quick-recipes', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
-        el('div.quick-sliders', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+        el('div.quick-recipes.w2-a', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
+        // v1.5 (B): recipes left, sliders right
+        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+    V.qmain.classList.add('w2'); s.body.classList.remove('w2');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
       stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
@@ -693,7 +763,7 @@
   /* ---- Screen ---------------------------------------------------------------------------------------------- */
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
-    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
+    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); D.dirty = true; head(s, D); } } });
     var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
     return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -735,6 +805,62 @@
     if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;   // v0.7.2: Marcel's French one stays French on load
     if (D.onSave) D.onSave(entry);
   }
+  /* ---- v1.5 (Lane N, package B): the tools column, PC layout only ------------------------------------------------ */
+  // The mockup's left column under the meters: this section's tools (Copy to… = the ⋯ menu, Clear, Fill on bar 4, Swap a
+  // beat), Feel, Song order and Tempo, beside the grid. Built only when ui.wide() (re-rendered on 'ui:wide'), so a phone
+  // never has it; its testids are side-* (the ⋯ menu's own rows keep theirs). Same edits as the ⋯ rows / the Song tab.
+  var FEEL_STOPS = [[0, 'Straight'], [2, 'Light swing'], [4, 'Swing']];
+  function sidePanel(s, D) {
+    if (!(ui.wide && ui.wide()) || D.mode === 'view' || D.tab === 'song') return null;
+    var sec = hasSec(D, D.tab), drums = sec && !(partLayer(D) && partHas(D, D.tab)), p = D.pat, G = GG.songs.genre(genre());
+    function edit(fn) { handEdit(D); fn(); s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    var kids = [];
+    if (drums) {
+      var fills = chipSec(D.tab), hasFill = !!(p.fillBars && p.fillBars[D.tab]);
+      kids.push(el('div.caps', 'This section'), el('div.seq-side-tools', [
+        btn('.btn.small', { testid: 'side-copy', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⧉ Copy to…'),
+        btn('.btn.small', { testid: 'side-clear', onclick: function () { edit(function () { if (fillOn(D)) p.fillBars[D.tab] = GG.songs.blankSection(p.lanes); else p.sections[D.tab] = GG.songs.blankSection(p.lanes); }); } }, '✕ Clear'),
+        fills ? btn('.btn.small' + (D.fill ? '.on' : ''), { testid: 'side-fill', 'aria-pressed': D.fill ? 'true' : 'false', onclick: function () {
+          if (!D.fill && !hasFill) { p.fillBars = p.fillBars || {}; p.fillBars[D.tab] = p.sections[D.tab].slice(); (D.fillNew = D.fillNew || {})[D.tab] = 1; }
+          D.fill = !D.fill; s.rerender(); changed(D);
+        } }, D.fill ? '✨ Main bar' : '✨ Fill on bar 4') : null,
+        btn('.btn.small', { testid: 'side-beat', onclick: function () { ui.show('seq-beat', { owner: s }); } }, '🥁 Swap a beat')]));
+    }
+    var sw = p.swing || 0;
+    kids.push(el('div.caps', 'Feel'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Feel' }, FEEL_STOPS.map(function (f) {
+      var on = sw === f[0] || (f[0] === 2 && sw > 0 && sw < 4);
+      return btn('.seg' + (on ? '.on' : ''), { testid: 'side-feel-' + f[0], 'aria-pressed': on ? 'true' : 'false', onclick: function () {
+        if (p.swing === f[0]) return;
+        p.swing = f[0]; if (D.qs) D.qs.swing = f[0]; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D);
+      } }, f[1]);
+    })));
+    var cur = baseArrangementId(p);
+    kids.push(el('div.caps', 'Song order'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Song order' }, GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);
+      return btn('.seg' + (id === cur ? '.on' : ''), { testid: 'side-arr-' + id, 'aria-pressed': id === cur ? 'true' : 'false', title: a.map(function (x) { return SEC_LABEL[x] || x; }).join(' · '),
+        onclick: function () { if (id === cur) return; edit(function () { p.arrangement = a.slice(); }); } }, ARR_NAMES[id]);
+    })));
+    function bpm(d) { var v = U.clamp(p.bpm + d, G.tempo[0], G.tempo[1]); if (v === p.bpm) return; p.bpm = v; if (D.qs) D.qs.bpm = v; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    kids.push(el('div.caps', 'Tempo'), el('div.seq-side-tempo', [
+      btn('.btn.small', { testid: 'side-tempo-down', 'aria-label': 'Slower', onclick: function () { bpm(-5); } }, '−'),
+      el('span.grow', { testid: 'side-tempo' }, [el('b', String(p.bpm)), ' bpm · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '')]),
+      btn('.btn.small', { testid: 'side-tempo-up', 'aria-label': 'Faster', onclick: function () { bpm(5); } }, '+')]));
+    return el('div.seq-side', { testid: 'seq-side' }, kids);
+  }
+  // (PC layout only: html.gg-wide)
+  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {
+    var sideCss = document.createElement('style'); sideCss.id = 'gg-seq-side-css';
+    sideCss.textContent = 'html.gg-wide .seq-side { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg { display: flex; gap: 4px; flex-wrap: wrap; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg { flex: 1 1 0; min-height: 36px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--dim); font: 700 12px/1.1 var(--font); cursor: pointer; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg.on { background: var(--panel2); color: var(--text); border-color: var(--amber); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 12px; background: var(--panel); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo b { font-size: 18px; }\n';
+    document.head.appendChild(sideCss);
+  }
+  GG.on('ui:wide', function () { var e = ui.get('seq'); if (e && e.data && e.data.screen === 'edit') e.rerender(); });
+
   function buildEdit(s, D) {
     var ro = D.mode === 'view', V = D.view = {};
     if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
@@ -757,16 +883,36 @@
       coachBubble(s, D),
       sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
       layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
+      // v1.5 (B): PC layout only
+      sidePanel(s, D),
       main
     ]);
+    // v1.5 (B): tools left, the grid right
+    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });
+    s.body.classList.add('w2');
     V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
     V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
     ui.append(s.foot, [V.loop, V.song, doneButton(s, D)]);
     head(s, D); rerate(D); playButtons(D);
   }
 
+  // v1.5 (Lane N): "changed since the screen opened" = an edit (D.dirty) that left the pattern or the title different.
+  function snapOf(D) { try { return JSON.stringify([D.pat, D.title]); } catch (e) { return ''; } }
+  function dirty(D) { return !!(D && D.mode !== 'view' && D.dirty && D._snap != null && snapOf(D) !== D._snap); }
+  ui.seqDirty = function () { var e = ui.get('seq'); return dirty(e && e.data); };
+  function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
+    // (the axes as on the grid: lanes across, time down)
+    hints: function (s) {
+      var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
+      return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
+    },
+    // Esc (50k): the ⋯ menu / pickers close first (they are the top layer); a change since opening asks first (Esc = keep editing).
+    back: function (s) {
+      if (!dirty(s.data)) { leave(s); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(s); });
+    },
     build: function (s, D) {
       if (D.mode === 'view') D.screen = 'edit';
       if (!D.screen) D.screen = D.pat ? 'edit' : 'quick';
@@ -775,6 +921,8 @@
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      // v1.5: what "changed since open" compares with
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
@@ -976,6 +1124,6 @@
       playhead: D.view ? D.view.ph : null, part: D.pat.part ? U.clone(D.pat.part) : null, recipe: D.pat.recipe ? U.clone(D.pat.recipe) : null,
       sliders: { energy: q.energy, mood: q.mood, feel: q.swing, fills: q.fills, bpm: q.bpm }, chords: chords,
       chips: chipSec(D.tab) && chords[D.tab] ? chords[D.tab].map(function (x) { return chordName(D, x, tonic); }) : [],
-      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null };
+      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null, dirty: dirty(D), kbFocus: D.kbFocus ? U.clone(D.kbFocus) : null };
   });
 })(window.GG);
