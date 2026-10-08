@@ -158,7 +158,7 @@
             el('p.tagline', "From your parents' garage to the Loonie Awards. Probably.")
           ]),
           el('div.title-foot', [
-            is3d ? el('div.title-hint', { testid: 'title-hint' }, 'Psst: tap the kit. Or Marcel.') : null,
+            is3d ? el('div.title-hint', { testid: 'title-hint' }, ui.tapWords ? ui.tapWords('Psst: tap the kit. Or Marcel.') : 'Psst: tap the kit. Or Marcel.') : null,
             el('div.menu-list', kids),
             el('div.credits', [
               el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION),

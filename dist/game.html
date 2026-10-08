@@ -52105,6 +52105,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   I.learned = function () { return Object.assign({}, st.learned); };
   I.wide = function () { return st.wide; };
   I.showKeyUI = function () { return st.desk || st.kbSeen || st.wide; };
+  ui.tapWords = function (s) {
+    if (!st.desk || typeof s !== 'string') return s;
+    return s.replace(/\b([Tt])ap\b/g, function (m, t) { return t === 'T' ? 'Click' : 'click'; });
+  };
+  ui.keysCopy = function () { return st.desk && st.mode === 'keys' ? 'Press 1–8 to walk to a spot, or Enter for the big button.' : null; };
   ui.wide = I.wide;
 
   cls('gg-desk', st.desk); cls('gg-keys', st.mode === 'keys');
@@ -52482,7 +52487,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             el('p.tagline', "From your parents' garage to the Loonie Awards. Probably.")
           ]),
           el('div.title-foot', [
-            is3d ? el('div.title-hint', { testid: 'title-hint' }, 'Psst: tap the kit. Or Marcel.') : null,
+            is3d ? el('div.title-hint', { testid: 'title-hint' }, ui.tapWords ? ui.tapWords('Psst: tap the kit. Or Marcel.') : 'Psst: tap the kit. Or Marcel.') : null,
             el('div.menu-list', kids),
             el('div.credits', [
               el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION),
@@ -53029,7 +53034,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     else if (st.phase === 'ended') ui.show('end');
   }
   function dockHint(st) {
-    if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+    if (st.phase === 'plan' && st.totalWeek <= 2) {
+      var kc = GG.main.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: on keys, the keys; on a computer, 'click'
+      if (kc) return kc;
+      var line = GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+      return ui.tapWords ? ui.tapWords(line) : line;
+    }
     if (st.phase === 'monday') return 'New week. Somebody has news.';
     if (st.phase === 'gig') return vanLine(st, 'dock');
     return '';
@@ -55674,14 +55684,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
       var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]], cap = G.capL && G.capL[l];
       x.textAlign = 'center'; x.textBaseline = 'middle';
+      var capY = H - 21, nameY = cap ? H - ZONE + 6 : H - 18;
       if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
-        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key instead
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key instead
         else { x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1; }
-        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, nameY);
       } else {
-        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
         else { x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12); }
-        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, nameY);
       }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
@@ -56034,7 +56045,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
         : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
-        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', GG.input && GG.input.desk && GG.input.desk() ? '🔊 Speaker' : '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
@@ -56048,7 +56059,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var slots = el('div.set-slots', { testid: 'set-slots' });
       for (var k = 0; k < size; k++) slots.appendChild(slotRow(s, k, size, ids, bo));
       B.appendChild(slots);
-      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
+      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, ui.tapWords ? ui.tapWords('Your songs · tap to add or drop') : 'Your songs · tap to add or drop'));
       var list = el('div.panel', { style: 'padding:0 12px' });
       GG.songs.best(st).forEach(function (song) {
         var at = ids.indexOf(song.id), r = song.rating || {};
@@ -56082,7 +56093,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var strc = pf.colourblind ? STR_CB : STR_COLORS;
     for (var c = 0; c < n; c++) {
       var l = lefty ? n - 1 - c : c, name, colr;
-      if (kind === 'strings') { name = l === 0 ? 'Low' : l === n - 1 ? 'Top' : String(l + 1); colr = strc[l] || '#8899bb'; }
+      if (kind === 'strings') { name = ['Low', '2nd', '3rd', '4th', '5th', 'Top'][P.keySlot(kind, l, n)]; colr = strc[l] || '#8899bb'; }
       else { var L = ui.LANES && ui.LANES[C.LANES[l]]; name = L ? L.name : C.LANES[l]; colr = pf.colourblind && P.CB_COLOURS[C.LANES[l]] ? P.CB_COLOURS[C.LANES[l]] : L ? L.color : '#8899bb'; }
       items.push(el('span.gk', [el('i.gk-dot', { style: { background: colr } }), kcap(ui.keyLabel(codes[l])), el('span', name)]));
     }
@@ -59462,8 +59473,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (kind === 'strings') return STR_SLOT[slot] + ' string';
     var L = ui.LANES && ui.LANES[GG.contracts.LANES[slot]]; return L ? L.name : GG.contracts.LANES[slot];
   }
-  function slotColour(kind, slot, pf) {
-    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[slot];
+  function slotColour(kind, slot, pf, lane) {
+    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[lane >= 0 ? lane : slot];
     var lane = GG.contracts.LANES[slot], L = ui.LANES && ui.LANES[lane];
     return pf.colourblind && P.CB_COLOURS[lane] ? P.CB_COLOURS[lane] : L ? L.color : '#8899bb';
   }
@@ -59471,7 +59482,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!st || !GG.career || !GG.career.seatOf) return null;
     var seat = GG.career.seatOf(st); if (P.keyKind(seat) !== kind) return null;
     var n = kind === 'strings' ? (GG.career.seatLanes ? GG.career.seatLanes(st) : 4) : Math.min(6, st.gear && st.gear.lanes >= 1 ? st.gear.lanes : 4), out = {};
-    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = 1;
+    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = l + 1;   // (the lane + 1: truthy)
     return out;
   }
   function refusedText(code) {
@@ -59530,7 +59541,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         onclick: function () { endBind(null); s.data.keysKind = x[0]; s.data.keysMsg = ''; s.rerender(); } }, x[1]);
     })));
     A.appendChild(el('div.set-keys-chips', map.map(function (code, slot) {
-      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf);
+      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf, used && used[slot] ? used[slot] - 1 : -1);
       var chip = btn('.set-key-chip' + (dim ? '.dim' : ''), { testid: 'set-key-' + kind + '-' + slot, style: { borderColor: c },
         'aria-label': name + ': ' + keyLabel(code) + '. Press to change.' }, [el('i.sk-dot', { style: { background: c } }), el('span.sk-name', name), kcap(keyLabel(code))]);
       chip.onclick = function () { startBind(s, kind, slot, chip); };
@@ -62451,7 +62462,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.tut-head', [who ? ui.avatar(who, 'sm') : el('span', { style: 'font-size:18px' }, '🎬'),
         el('span.tut-who', { testid: 'tut-who' }, who ? who.short + (who.nick && who.nick !== who.short ? ' · ' + who.nick : '') : (ui.band(st) || {}).name || 'The band'),
         el('span.tut-n', (cur.i + 1) + '/' + n)]),
-      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, step.text),
+      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, ui.tapWords ? ui.tapWords(step.text) : step.text),   // v1.5 review: 'click' on a computer
       el('div.tut-btns', [skip, next])]);
     ui.append(layer, [ring, card]);
     bindAdvance(step);
@@ -62806,6 +62817,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     'html.gg-wide .sheet-foot > .kb-hints { order: -1; flex: 0 1 auto; width: auto; margin-right: auto; text-align: left; }',
     'html.gg-wide .gigset .sheet-foot > div:has(> [data-testid="btn-gig-start"]) { flex: 0 1 520px !important; }',
     'html.gg-wide .modal { max-width: 420px; }',
+    '@media (max-height: 800px) { html.gg-wide .sheet-head { padding-top: 6px; padding-bottom: 2px; min-height: 52px; }'
+      + ' html.gg-wide .sheet-foot { padding-top: 8px; padding-bottom: 10px; }'
+      + ' html.gg-wide .sheet-foot > .btn.primary, html.gg-wide .sheet-foot > .btn.block { min-height: 44px; padding-top: 0; padding-bottom: 0; } }',
 
     'html.gg-wide .w2 { display: flow-root; --w2a: calc(50% - 12px); }',
     'html.gg-wide .w2 > .w2-a { float: left; clear: left; width: var(--w2a); margin-top: 0; margin-bottom: 12px; }',
@@ -62869,6 +62883,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
+    '@media (max-width: 999px) { html.gg-wide .full.gig .gig-hint { display: none; } }',
 
     'html.gg-wide .full.rvset .rs-bar, html.gg-wide .full.rvset .rs-banner { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
     'html.gg-wide .full.rvset .rs-panel { left: max(0px, calc((100% - 720px) / 2)); right: max(0px, calc((100% - 720px) / 2)); bottom: 16px; padding-bottom: 14px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; }',
@@ -63076,8 +63091,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       M._taught = true;
       var t0 = ui.talkers(st)[0] || (st.members && st.members[0]), mate = t0 ? ui.who(t0.id) : null;   // v0.9: a member who talks
       var who = mate ? (mate.nick || mate.short) : 'The band';
-      ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
-        : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
+      var msg = M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
+        : 'Tap the whiteboard (or the big button) to plan the week.', kc = M.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: keys / 'click' on a computer
+      ui.toast(kc ? kc.replace('the big button.', 'the big button to plan the week.') : ui.tapWords ? ui.tapWords(msg) : msg, { who: who, ms: 6500 });
     }
     if (st && ui.announceShowdown) ui.announceShowdown(st);   // v0.6: after the Monday card
   };

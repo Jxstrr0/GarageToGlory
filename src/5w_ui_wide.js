@@ -50,6 +50,10 @@
     // (the setlist's foot is one column of its own: Auto-pick / Simulate over Start the show)
     'html.gg-wide .gigset .sheet-foot > div:has(> [data-testid="btn-gig-start"]) { flex: 0 1 520px !important; }',
     'html.gg-wide .modal { max-width: 420px; }',
+    // v1.5 review: a short PC window (1280x720): tighter sheet head + foot give the room above an open panel ~40 px more
+    '@media (max-height: 800px) { html.gg-wide .sheet-head { padding-top: 6px; padding-bottom: 2px; min-height: 52px; }'
+      + ' html.gg-wide .sheet-foot { padding-top: 8px; padding-bottom: 10px; }'
+      + ' html.gg-wide .sheet-foot > .btn.primary, html.gg-wide .sheet-foot > .btn.block { min-height: 44px; padding-top: 0; padding-bottom: 0; } }',
 
     // ---- two columns (.w2: the screens' hooks; .w2-a left, .w2-b right; either may come first in the DOM) ----
     'html.gg-wide .w2 { display: flow-root; --w2a: calc(50% - 12px); }',
@@ -126,6 +130,8 @@
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
+    // v1.5 review: a window resized narrower mid-song keeps the PC layout (gigLive); below 1000 px the card has no room
+    '@media (max-width: 999px) { html.gg-wide .full.gig .gig-hint { display: none; } }',
 
     // ---- the rival's set and the award nights (stage scenes like the gig): their panels centred, max 720 ----
     'html.gg-wide .full.rvset .rs-bar, html.gg-wide .full.rvset .rs-banner { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',

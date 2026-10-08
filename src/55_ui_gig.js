@@ -1092,14 +1092,17 @@
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
       var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]], cap = G.capL && G.capL[l];
       x.textAlign = 'center'; x.textBaseline = 'middle';
+      // v1.5 review: played on keys, the keycap sits under the hit line (a gem being played never covers it) and the lane's
+      // name moves to the zone's top edge
+      var capY = H - 21, nameY = cap ? H - ZONE + 6 : H - 18;
       if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
-        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key instead
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key instead
         else { x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1; }
-        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, nameY);
       } else {
-        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
+        if (cap) keycap(x, lx + laneW / 2, capY, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
         else { x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12); }
-        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, nameY);
       }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
@@ -1467,7 +1470,7 @@
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
         : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
-        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', GG.input && GG.input.desk && GG.input.desk() ? '🔊 Speaker' : '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
@@ -1481,7 +1484,7 @@
       var slots = el('div.set-slots', { testid: 'set-slots' });
       for (var k = 0; k < size; k++) slots.appendChild(slotRow(s, k, size, ids, bo));
       B.appendChild(slots);
-      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
+      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, ui.tapWords ? ui.tapWords('Your songs · tap to add or drop') : 'Your songs · tap to add or drop'));
       var list = el('div.panel', { style: 'padding:0 12px' });
       GG.songs.best(st).forEach(function (song) {
         var at = ids.indexOf(song.id), r = song.rating || {};
@@ -1519,7 +1522,8 @@
     var strc = pf.colourblind ? STR_CB : STR_COLORS;
     for (var c = 0; c < n; c++) {
       var l = lefty ? n - 1 - c : c, name, colr;
-      if (kind === 'strings') { name = l === 0 ? 'Low' : l === n - 1 ? 'Top' : String(l + 1); colr = strc[l] || '#8899bb'; }
+      // (v1.5 review: string names by map slot, as Settings > Keys names them: Low 2nd 3rd 4th 5th Top; colour by lane, as the highway)
+      if (kind === 'strings') { name = ['Low', '2nd', '3rd', '4th', '5th', 'Top'][P.keySlot(kind, l, n)]; colr = strc[l] || '#8899bb'; }
       else { var L = ui.LANES && ui.LANES[C.LANES[l]]; name = L ? L.name : C.LANES[l]; colr = pf.colourblind && P.CB_COLOURS[C.LANES[l]] ? P.CB_COLOURS[C.LANES[l]] : L ? L.color : '#8899bb'; }
       items.push(el('span.gk', [el('i.gk-dot', { style: { background: colr } }), kcap(ui.keyLabel(codes[l])), el('span', name)]));
     }

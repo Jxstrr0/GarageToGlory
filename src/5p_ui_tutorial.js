@@ -198,7 +198,7 @@
       el('div.tut-head', [who ? ui.avatar(who, 'sm') : el('span', { style: 'font-size:18px' }, '🎬'),
         el('span.tut-who', { testid: 'tut-who' }, who ? who.short + (who.nick && who.nick !== who.short ? ' · ' + who.nick : '') : (ui.band(st) || {}).name || 'The band'),
         el('span.tut-n', (cur.i + 1) + '/' + n)]),
-      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, step.text),
+      el('div.tut-text' + (step.narr ? '.narr' : ''), { testid: 'tut-text' }, ui.tapWords ? ui.tapWords(step.text) : step.text),   // v1.5 review: 'click' on a computer
       el('div.tut-btns', [skip, next])]);
     ui.append(layer, [ring, card]);
     bindAdvance(step);

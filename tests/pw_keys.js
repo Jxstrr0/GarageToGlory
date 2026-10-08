@@ -21,7 +21,8 @@
 //              keeps it, the gig uses it (+ keycap); a rebind started with Enter shows no "Enter is for menus".
 //   calib-keys both key steps write calibKb (touch calib untouched); a key held 1 s = one tap; light check only keeps the
 //              touch audio (fallback).
-//   phone      390x844 phone context: no Keys section, Layout row, calib input seg, gig-keys, gig-pause-keys, keycaps.
+//   phone      390x844 phone context: no Keys section, Layout row, calib input seg, gig-keys, gig-pause-keys, keycaps; no
+//              v1.5-only class (.kcap .gig-keys .gig-hint .set-key-chip .kb-spots ...) in the DOM.
 //   wide-gig   the PC layout's highway at 1280x720 / 1440x900 / 1920x1080, 4 and 6 lanes: data-lanes, laneW = width / lanes,
 //              wide gems, note travel time == the phone's, the stage frame to 0.1 of the highway, B bounds (when 5w is in
 //              the tree); a resize 1440 -> 800 while paused re-lays it out (laneW right after resume).
@@ -684,12 +685,18 @@ async function phone() {
   const c = checker('phone');
   const { page, errors, close } = await open();   // the phone context (390x844 unless PW_VIEW)
   const none = ids => page.evaluate(ids => ids.filter(i => document.querySelector('[data-testid="' + i + '"]')), ids);
+  // v1.5 review: the unprefixed v1.5-only classes (55, 5h, 52, 50) never reach a phone's DOM
+  const V15 = '.kcap, .gig-keys, .gig-pause-keys, .gig-hint, .set-keys-chips, .set-key-chip, .set-keys-msg, .set-keys-timing, .kb-spots, .kb-hints, .calib-docked';
+  const v15seen = [];
+  const v15 = async where => { const n = await page.evaluate(sel => [...document.querySelectorAll(sel)].map(e => e.className), V15); if (n.length) v15seen.push(where + ': ' + n.slice(0, 3).join(' / ')); };
   try {
     await page.waitForSelector(tid('btn-new'), { timeout: 30000 });
     c.ok(await page.evaluate(() => !/gg-/.test(document.documentElement.className) && GG.debug('input').mode === 'touch' && !GG.input.showKeyUI()), 'phone: no desktop class, touch, no key UI');
     await career(page, { seat: 'drums', lanes: 4 });
+    await v15('garage');
     await page.evaluate(() => GG.ui.show('settings', { tab: 'play' }));
     await page.waitForSelector(tid('set-done'));
+    await v15('settings');
     let left = await none(['set-keys', 'set-layout-auto', 'set-layout-phone', 'set-layout-wide', 'set-calibrate-keys', 'set-keys-timing']);
     c.ok(!left.length, 'phone settings: no Keys section, no Layout row ' + left.join(' '));
     await page.evaluate(() => GG.ui.show('calib', {}));
@@ -700,6 +707,7 @@ async function phone() {
     await page.evaluate(() => { const s = GG.state; s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.playGig(s.gig, () => {}); });
     await waitScreen(page, 'gig-set');
     left = await none(['gig-keys', 'gig-keys-change']);
+    await v15('setlist');
     c.ok(!left.length, 'phone setlist: no key legend ' + left.join(' '));
     await page.locator(tid('btn-gig-start')).click();
     await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 12000 });
@@ -708,6 +716,8 @@ async function phone() {
     await page.locator(tid('btn-gig-pause')).click();
     await page.waitForFunction(() => GG.debug('gigui').paused);
     left = await none(['gig-pause-keys', 'gig-hint']);
+    await v15('pause');
+    c.ok(!v15seen.length, 'phone: no v1.5-only class in the DOM (garage, settings, setlist, pause) ' + v15seen.join(' | '));
     c.ok(!left.length, 'phone pause card: no "Esc to resume" ' + left.join(' '));
     c.ok(await page.evaluate(() => !/gg-/.test(document.documentElement.className)), 'phone: still no desktop class ' + await page.evaluate(() => document.documentElement.className));
     await page.evaluate(() => GG.ui.closeAll());

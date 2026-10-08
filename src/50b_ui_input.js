@@ -133,6 +133,13 @@
   I.learned = function () { return Object.assign({}, st.learned); };
   I.wide = function () { return st.wide; };
   I.showKeyUI = function () { return st.desk || st.kbSeen || st.wide; };
+  // v1.5 review: touch wording on a computer. ui.tapWords(text): 'tap' -> 'click' (whole words) on a computer, else the text
+  // unchanged (phones: byte-identical). ui.keysCopy(): the garage's walking line when played on keys (null otherwise).
+  ui.tapWords = function (s) {
+    if (!st.desk || typeof s !== 'string') return s;
+    return s.replace(/\b([Tt])ap\b/g, function (m, t) { return t === 'T' ? 'Click' : 'click'; });
+  };
+  ui.keysCopy = function () { return st.desk && st.mode === 'keys' ? 'Press 1–8 to walk to a spot, or Enter for the big button.' : null; };
   ui.wide = I.wide;
 
   // start: the classes from what this device is (a phone context sets none)

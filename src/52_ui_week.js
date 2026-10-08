@@ -133,7 +133,12 @@
     else if (st.phase === 'ended') ui.show('end');
   }
   function dockHint(st) {
-    if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+    if (st.phase === 'plan' && st.totalWeek <= 2) {
+      var kc = GG.main.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: on keys, the keys; on a computer, 'click'
+      if (kc) return kc;
+      var line = GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
+      return ui.tapWords ? ui.tapWords(line) : line;
+    }
     if (st.phase === 'monday') return 'New week. Somebody has news.';
     if (st.phase === 'gig') return vanLine(st, 'dock');
     return '';

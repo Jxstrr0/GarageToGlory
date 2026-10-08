@@ -86,8 +86,10 @@
     if (kind === 'strings') return STR_SLOT[slot] + ' string';
     var L = ui.LANES && ui.LANES[GG.contracts.LANES[slot]]; return L ? L.name : GG.contracts.LANES[slot];
   }
-  function slotColour(kind, slot, pf) {
-    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[slot];
+  // (v1.5 review: a string slot takes the colour of the lane it plays on your rig, as the highway + the setlist legend draw it;
+  // lane = that lane, or -1 when the slot is off your rig / no career)
+  function slotColour(kind, slot, pf, lane) {
+    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[lane >= 0 ? lane : slot];
     var lane = GG.contracts.LANES[slot], L = ui.LANES && ui.LANES[lane];
     return pf.colourblind && P.CB_COLOURS[lane] ? P.CB_COLOURS[lane] : L ? L.color : '#8899bb';
   }
@@ -96,7 +98,7 @@
     if (!st || !GG.career || !GG.career.seatOf) return null;
     var seat = GG.career.seatOf(st); if (P.keyKind(seat) !== kind) return null;
     var n = kind === 'strings' ? (GG.career.seatLanes ? GG.career.seatLanes(st) : 4) : Math.min(6, st.gear && st.gear.lanes >= 1 ? st.gear.lanes : 4), out = {};
-    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = 1;
+    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = l + 1;   // (the lane + 1: truthy)
     return out;
   }
   function refusedText(code) {
@@ -158,7 +160,7 @@
         onclick: function () { endBind(null); s.data.keysKind = x[0]; s.data.keysMsg = ''; s.rerender(); } }, x[1]);
     })));
     A.appendChild(el('div.set-keys-chips', map.map(function (code, slot) {
-      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf);
+      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf, used && used[slot] ? used[slot] - 1 : -1);
       var chip = btn('.set-key-chip' + (dim ? '.dim' : ''), { testid: 'set-key-' + kind + '-' + slot, style: { borderColor: c },
         'aria-label': name + ': ' + keyLabel(code) + '. Press to change.' }, [el('i.sk-dot', { style: { background: c } }), el('span.sk-name', name), kcap(keyLabel(code))]);
       chip.onclick = function () { startBind(s, kind, slot, chip); };

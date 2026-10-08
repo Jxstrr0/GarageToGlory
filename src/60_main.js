@@ -209,8 +209,9 @@
       M._taught = true;
       var t0 = ui.talkers(st)[0] || (st.members && st.members[0]), mate = t0 ? ui.who(t0.id) : null;   // v0.9: a member who talks
       var who = mate ? (mate.nick || mate.short) : 'The band';
-      ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
-        : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
+      var msg = M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
+        : 'Tap the whiteboard (or the big button) to plan the week.', kc = M.renderOk && ui.keysCopy ? ui.keysCopy() : null;   // v1.5 review: keys / 'click' on a computer
+      ui.toast(kc ? kc.replace('the big button.', 'the big button to plan the week.') : ui.tapWords ? ui.tapWords(msg) : msg, { who: who, ms: 6500 });
     }
     if (st && ui.announceShowdown) ui.announceShowdown(st);   // v0.6: after the Monday card
   };
