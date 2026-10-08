@@ -77,3 +77,40 @@ sides, Settings rail + keys + docked timing, songwriter tools | grid all match p
 - pw_freeze `results` / `tutorial` and several CPU-budget checks are load-sensitive (they pass alone).
 - The card guard is the contract's 600 ms rule; keycap labels on file:// fall back to keys seen this session / codes
   (no `getLayoutMap` on file://). Three quick Enters on Rehearse fill three blocks (focus restore isn't stamped; Lane N).
+
+## 7. Review fixes (fixer, 2026-10-08; commits 533082a..HEAD on `v1.5-desktop`)
+**CONFIRMED (major) - PC gig camera zoomed into the middle of the band window, the player's kit behind the highway: FIXED.**
+42 `frame()` keeps the uncapped fov (`tU`) and `zk = tU / tFull`; when the PC-only hFov <= 100 cap zooms in (zk > 1) the
+band's bottom edge is pinned to the frame bottom (`camOffY = H/2 - (top + bandH - zk*bandH/2)`) and the overflow is cropped at
+the top behind the song header. Only inside the existing `GG.ui.wide()` gate (phones: zk = 1, framing unchanged; freeze equal).
+Measured (drummer, 'kit' camera): head / torso / throne y vs highway top: 1280 298 / 346 / 407 vs 358; 1440 388 / 442 / 511 vs
+452; 1920 454 / 525 / 618 vs 546 (was 356 / 410 / 465 at 1280). Bass seat ('spot' camera) 1440: head 298, torso 372 vs 452.
+The throne / kick still sit at the band window's bottom edge (the 10 % guard band the uncapped framing also uses).
+New: `stage.info().you2d` { head, torso, seat } (screen y, null for the spectator camera); pw_wide `gig` now runs 4 + 6 drums
+and a 5-string bass and asserts head + torso above the highway at 1280 / 1440 / 1920 (the old code fails it at every size).
+
+**MINORS**
+| # | finding | outcome |
+|---|---|---|
+| 1 | tablet + trackpad gets the PC layout | fixed: Auto layout and the start mode 'keys' also need no `(any-pointer: coarse)` (50b `deskAuto`, live); gg-desk unchanged, so Settings > Layout can still pick PC |
+| 2 | gig contextmenu block covered the whole show on phones | fixed: the root block only when the song is on keys or on a computer; touch phones keep 1.4 (only the canvas blocks it) |
+| 3 | CSS lint misses unprefixed v1.5 classes in other files | fixed (pw route): pw_keys `phone` asserts no `.kcap .gig-keys .gig-pause-keys .gig-hint .set-keys-* .set-key-chip .kb-spots .kb-hints .calib-docked` in the phone DOM (garage, settings, setlist, pause) |
+| 4 | arrows dead on the pause card with nothing focused | fixed: 50k `move()` falls back to the first control that way inside the screen's `def.keysIn()` card (55: pause card / between-songs card); pw_keys `esc` asserts ArrowDown reaches Resume / Restart |
+| 5 | kb-hints 'Esc close' on sticky screens | fixed: `ui.escActs(e)` (50k, mirrors `back()` without acting); syncHints shows 'Tab move · Enter pick' where Esc does nothing |
+| 6 | AZERTY labels wrong on the first legend / Keys view | fixed: the layout map lives in 50b (`GG.input.askLayoutMap / layoutMap`), asked at boot on a computer, re-asked on `layoutchange`; emits `input:layoutmap`, gig-set + Settings re-render on it |
+| 7 | learned labels record shifted symbols | fixed: no learning from a Shift-held non-letter |
+| 8 | L / R Shift both 'Shift' | fixed: `P.keySides(s, code)` + `P.keyLabel(.., sides)` -> 'L Shift' / 'R Shift' (Ctrl, Alt, Meta) only when both sides are bound; keys.test pins it |
+| 9 | string legend vs Settings names / colours | fixed: legend names by map slot (Low 2nd 3rd 4th 5th Top, as Settings), Settings colours each string slot by the lane it plays on your rig (as the highway / legend) |
+| 10 | garage copy says 'tap' to keyboard players | fixed: on a computer in keys mode the dock hint + week-1 toast say "Press 1–8 to walk to a spot, or Enter for the big button"; tutorial text gets 'click' on a computer (`ui.tapWords`, render-time) |
+| 11 | 50b typing() treats sliders / checkboxes as text | fixed: 50b `typing` and 55 `typingIn` use ui.isTyping's rule |
+| 12 | keycaps under the gems on the hit line | fixed: under G.caps the cap sits under the hit line (H-21), the lane name moves to the zone's top edge; touch drawing unchanged |
+| 13 | 'Esc pause' card off the right edge after a mid-song shrink | fixed: hidden below 1000 px in the PC layout (fits at >= 1000 for 4-6 lanes) |
+| 14 | 'Phone speaker' / 'tap' wording on desktop | fixed: 'Speaker' on a computer; setlist 'tap to add', title hint use `ui.tapWords` ('click'); phone strings byte-identical |
+| 15 | 1280x720 planner room 210 px, labels overlap | partly: `@media (max-height: 800px)` tightens the sheet head + foot (panel 416 -> 378 px, room +38 px); labels no longer cover each other but Drum kit / Gear shop still touch. A label de-overlap pass is left for later |
+
+**Verification (final tree):** node build 5,345,933 B (size gate <= 6,000,000; gzip 1,748,938), SUITE ALL PASS (keys 13).
+pw_freeze 390 / 440 / 844l ALL PASS 5 each. Phone (390x844 + 440x956): pw_gig, pw_settings, pw_tutorial, pw_garage, pw_title,
+pw_nav, pw_keys phone, phoneqa ALL PASS, except pw_gig `sync` at 440 under a parallel desktop run (one 10 ms-late snap) ->
+passed alone twice. Desktop: pw_wide (all sections, 4 sizes), pw_nav (4 sizes), pw_keys at 1280x720 / 1440x900 / 1920x1080 /
+800x900, desktopqa at the 4 sizes ALL PASS. Owner shots 01, 02, 03, 05, 08 re-taken (`scratchpad/v15_owner/`, same names):
+the drummer's head and torso now above the highway at 1440 and 1920, keycaps readable under the hit line.
