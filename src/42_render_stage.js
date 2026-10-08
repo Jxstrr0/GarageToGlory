@@ -6,6 +6,8 @@
 //   setup({ venue: GIG|venue|kind, crowd: attendance, members, flags, genre, player, bpm })
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
+//   v1.5 "Desktop" (Lane W): in the PC layout (html.gg-wide) the horizontal field of view is capped at 100 degrees (a very
+//   wide window would bend the room); info().hFov / vFov (degrees). Phones frame exactly as before.
 //   v0.7.2 kick2(): a double kick's second hit (the left foot on the double pedal, the kick shell pulses); info().kick2s
 //   v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): setup({ ..., seat, lineup }) (defaults: state.seat || 'drums',
 //   GG.career.lineup(state)). Drums = the v0.3 behind-the-kit camera, unchanged. A string seat (your own band; a rival set
@@ -1475,6 +1477,7 @@
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
+      if (GG.ui && GG.ui.wide && GG.ui.wide()) tFull = Math.min(tFull, Math.tan(50 * Math.PI / 180) * H / W);   // v1.5: hFov <= 100 deg (PC layout)
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
       if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
       camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
@@ -2176,7 +2179,8 @@
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
             fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
-          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)),   // v0.8
+          vFov: +ctx.camera.fov.toFixed(1), hFov: +(2 * Math.atan(Math.tan(ctx.camera.fov * Math.PI / 360) * ctx.camera.aspect) * 180 / Math.PI).toFixed(1) };   // v1.5
       }
     };
     return shell;
