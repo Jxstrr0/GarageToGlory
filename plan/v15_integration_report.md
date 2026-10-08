@@ -54,8 +54,16 @@ Band tab), 08_1920_gig (1920x1080), 09_phone_unchanged_440 (440x956 garage, as v
 Compared with `plan/v15_desktop_mockup_B.png`: garage + planner panel, gig highway centred under the stage with the stage on both
 sides, Settings rail + keys + docked timing, songwriter tools | grid all match package B. Fixed here: songwriter grid width.
 
-## 5. Final tree
-(filled in below after the final reruns)
+## 5. Final tree (after the hand-overs + fixes; logs `scratchpad/v15m/final/`)
+- Node SUITE ALL PASS; build 5,340,477 B.
+- pw_freeze 390 / 440 / 844l ALL PASS 5 each (phone layout equal to the 1.4.0.0 fixtures).
+- pw_keys full at 1280x720, 1440x900, 1920x1080: all 10 sections ALL PASS at each size (keys 67, fair 17, stuck 9, space 9,
+  esc 5, blur 6, rebind 22, calib-keys 9, phone 8, wide-gig 40).
+- pw_wide perf alone x2: 2.40 MP drawn at 1440 + 1920 dpr 2; gig p95 1920 416.7 / 433.3 ms <= 1.2 x 1440 466.7 ms (headless
+  software GL; one earlier run under load missed the ratio, as Lane W also saw).
+- pw_perf at 1920x1080: quick 3, scenes 18, governor 12, ratio 11, stalls 10, audio 7, pre 9 ALL PASS.
+- pw_seq genres + heavy alone x2 at 390 and 440 ALL PASS; pw_perf pre alone x2 at 390 and 440 ALL PASS; pw_keys fair alone
+  x2 at 1280 and 1440 ALL PASS.
 
 ## 6. Gaps (for the review / owner check)
 - No on-screen score card in the PC gig (mockup B shows one right of the highway); only the `gig-hint` (Esc pause) sits there.
