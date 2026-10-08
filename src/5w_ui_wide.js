@@ -90,7 +90,7 @@
       + ' column-gap: 24px; row-gap: 0; align-content: stretch; overflow-y: auto; }',
     'html.gg-wide .full.seq .full-body.w2 > .w2-a { float: none; clear: none; width: auto; grid-column: 1; margin: 0 0 8px; min-width: 0; }',
     'html.gg-wide .full.seq .full-body.w2 > .seq-head { grid-column: 1 / -1; grid-row: 1; margin: 0 -6px 4px; }',
-    'html.gg-wide .full.seq .full-body.w2 > .w2-b { grid-column: 2; grid-row: 2 / -1; margin: 0; min-height: 0; }',
+    'html.gg-wide .full.seq .full-body.w2 > .w2-b { grid-column: 2; grid-row: 2 / -1; width: auto; margin: 0; min-height: 0; }',
     'html.gg-wide .full.seq .full-body.w2 > .seq-tabs { margin: 0; padding: 0; }',
     'html.gg-wide .seq-grid[data-lanes="4"] { width: 100%; max-width: 516px; margin: 0 auto; }',
     'html.gg-wide .seq-grid[data-lanes="5"] { width: 100%; max-width: 639px; margin: 0 auto; }',
