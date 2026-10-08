@@ -325,6 +325,7 @@
   // v1.5: the setlist sheet + results re-render for the PC layout's columns (and the setlist's key legend after a first key press)
   GG.on('ui:wide', function () { ['gig-set', 'gig-results'].forEach(function (id) { var e = ui.get && ui.get(id); if (e && G) e.rerender(); }); });
   GG.on('input:mode', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });
+  GG.on('input:layoutmap', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v1.5 review
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
@@ -827,13 +828,16 @@
   // A key id is ev.code (code-less: GG.prefs.codeOf(key)), so 'A' down / 'a' up is one press. G.down = the trusted ids
   // down now; G.keyDown[id] = { lane, hold } for a string press (what its keyup lifts).
   var CARD_ARM = 600, CTRL_BLOCK = { KeyS: 1, KeyD: 1, KeyF: 1, KeyP: 1 };
-  var LMAP = null, lmapAsked = false;
-  function askLayoutMap() {   // navigator.keyboard.getLayoutMap() (Chromium, secure origin) names the keycaps (AZERTY: A is Q)
-    if (lmapAsked) return; lmapAsked = true;
-    try { var k = navigator.keyboard; if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; }, function () {}); } catch (e) { /* none */ }
-  }
+  // navigator.keyboard.getLayoutMap() names the keycaps (AZERTY: A is Q): GG.input asks (at boot on a computer) and emits
+  // 'input:layoutmap' when it lands (v1.5 review: the setlist legend + Settings > Keys re-render on it)
+  function askLayoutMap() { if (GG.input && GG.input.askLayoutMap) GG.input.askLayoutMap(); }
   // A keycap's text: the layout map > what this session saw the key print (GG.input.learned) > the code (5h uses it too).
-  ui.keyLabel = function (code) { askLayoutMap(); return P.keyLabel(code, LMAP, GG.input && GG.input.learned ? GG.input.learned() : null); };
+  // Both Shifts (Ctrl, Alt) bound: 'L Shift' / 'R Shift' (v1.5 review: P.keySides).
+  ui.keyLabel = function (code) {
+    askLayoutMap();
+    var I = GG.input;
+    return P.keyLabel(code, I && I.layoutMap ? I.layoutMap() : null, I && I.learned ? I.learned() : null, P.keySides(P.get(), code));
+  };
   function kcap(text) { return el('span.kcap', text); }
   ui.kcap = kcap;
   function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
@@ -843,7 +847,7 @@
   function liveMode() { return G.mode === 'play' || G.mode === 'count' || G.mode === 'hold'; }
   function keyId(ev) { return ev.code || P.codeOf(ev.key) || ''; }
   function stampOf(ev) { var now = performance.now(), t = ev.timeStamp; return t > 0 && Math.abs(t - now) < 1000 ? t : now; }
-  function typingIn(t) { if (!t || t.nodeType !== 1) return false; var n = t.nodeName; return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable; }
+  function typingIn(t) { return ui.isTyping ? ui.isTyping(t) : !!(t && t.nodeType === 1 && /^(INPUT|TEXTAREA|SELECT)$/.test(t.nodeName)); }   // v1.5 review: ui.isTyping's rule
   function confirmKey(ev, id) { return ev.key === 'Enter' || ev.key === ' ' || id === 'Space' || id === 'Enter' || id === 'NumpadEnter'; }
   function lanesNow() { return G.chart ? Math.max(G.chart.lanes || 4, 1) : G.lanes; }
   // Frozen at count-in (like drawOff): the song's input, its timing and the key map; keycaps when it is played on keys.
@@ -1392,8 +1396,9 @@
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
-      // v1.5: no context menu anywhere on the show while it runs (a right-click / long-press loses a keyup)
-      s.root.addEventListener('contextmenu', function (e) { if (G) e.preventDefault(); });
+      // v1.5: no context menu anywhere on the show while it runs (a right-click loses a keyup); v1.5 review: only on keys or a
+      // computer (a touch phone keeps v1.4's long-press: only the highway canvas blocks it, below)
+      s.root.addEventListener('contextmenu', function (e) { if (G && (G.input === 'keys' || (GG.input && GG.input.desk && GG.input.desk()))) e.preventDefault(); });
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
       d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),

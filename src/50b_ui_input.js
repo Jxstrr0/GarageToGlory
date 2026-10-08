@@ -6,13 +6,14 @@
 //     Process / Dead), outside input / textarea / select / contenteditable. Only a real non-modifier keydown counts toward
 //     mode, kbSeen, learned (and the router's gg-kbnav): typing on a phone's on-screen keyboard never does.
 //   mode() 'keys'|'touch' (a real keydown -> keys; a touch / pen pointerdown -> touch; the mouse never changes it; starts
-//     desk ? 'keys' : 'touch') ; desk() (matchMedia '(hover: hover) and (pointer: fine)', live) ; kbSeen() (this session) ;
+//     'keys' on a computer with no coarse pointer, else 'touch'; Auto layout also needs no coarse pointer: a tablet + trackpad) ; desk() (matchMedia '(hover: hover) and (pointer: fine)', live) ; kbSeen() (this session) ;
 //     learned() { code: printed key } (real keydowns without Ctrl / Alt / Meta) ; wide() ; showKeyUI() = desk || kbSeen || wide ;
 //     layoutPref() 'auto'|'phone'|'wide' (settings.layout).
 //   <html> classes: gg-desk (desk), gg-keys (mode keys), gg-wide (GG.prefs.layoutFor(innerWidth, innerHeight, desk, layout);
 //     re-checked on resize (200 ms debounce), the media change and settings:changed { layout }; never while a song is live:
 //     it waits for gigLive(false)). None of them is set in a phone context before a real key press.
-//   Events: 'input:mode' { mode } ; 'ui:wide' { wide }. GG.ui.wide() -> bool.
+//   Events: 'input:mode' { mode } ; 'ui:wide' { wide } ; 'input:layoutmap' {} (askLayoutMap(again?) / layoutMap(): the keycap
+//     names; v1.5 review). typing(node) = ui.isTyping's rule. GG.ui.wide() -> bool.
 //   capture(fn) -> release(): one exclusive slot. A window capture-phase keydown / keyup listener (registered first, at load)
 //     stops every key while it is held (preventDefault + stopImmediatePropagation) and hands fn(ev) only trusted, non-repeat,
 //     non-IME keydowns of a key that went down after the capture started (a key already down is ignored until released).
@@ -26,16 +27,24 @@
   var MODS = { Shift: 1, Control: 1, Alt: 1, AltGraph: 1, Meta: 1, OS: 1, CapsLock: 1, Fn: 1, FnLock: 1, Hyper: 1, Super: 1, Symbol: 1, SymbolLock: 1, NumLock: 1, ScrollLock: 1 };
   var NOKEY = { Unidentified: 1, Process: 1, Dead: 1 };
   var mq = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  // v1.5 review: a tablet with a trackpad (iPadOS + Magic Keyboard) can report a fine hover pointer: Auto keeps the phone layout
+  // and touch mode while any coarse pointer is present (the Settings Layout row, shown via gg-desk, can still pick PC).
+  var mqc = window.matchMedia ? window.matchMedia('(any-pointer: coarse)') : null;
+  function deskAuto() { return st.desk && !(mqc && mqc.matches); }
   var st = { desk: !!(mq && mq.matches), mode: 'touch', kbSeen: false, learned: {}, nLearned: 0, lastReal: null, live: false, wide: false,
     cap: null, capStale: null, down: {}, resizeT: 0, pending: false };
-  st.mode = st.desk ? 'keys' : 'touch';
+  st.mode = deskAuto() ? 'keys' : 'touch';
+  var LMAP = null, lmapAsked = false;
 
   function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  // A text field (v1.5 review: the same rule as ui.isTyping: buttons, checkboxes, radios, sliders etc. are not typing)
   function typing(t) {
     if (!t || t.nodeType !== 1) return false;
     var n = t.nodeName;
-    return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
+    if (n === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(t.type || 'text');
+    return n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
   }
+  I.typing = typing;
   I.real = function (ev) {
     return !!(ev && ev.isTrusted && ev.code && !ev.isComposing && ev.keyCode !== 229 && !NOKEY[ev.key] && !typing(ev.target));
   };
@@ -46,7 +55,7 @@
     GG.emit('input:mode', { mode: m });
   }
   I.layoutPref = function () { var l = prefs().layout; return l === 'phone' || l === 'wide' ? l : 'auto'; };
-  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, st.desk, I.layoutPref()) : false; }
+  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, deskAuto(), I.layoutPref()) : false; }
   function checkWide() {
     if (st.live) { st.pending = true; return; }
     st.pending = false;
@@ -62,7 +71,9 @@
     if (I.real(ev) && !MODS[ev.key]) {
       st.lastReal = ev.code;
       if (!st.kbSeen) st.kbSeen = true;
-      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key) {
+      // (v1.5 review: never a shifted digit / symbol, e.g. '!' for Digit1 while Shift (toms / 5th string) is held)
+      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key &&
+        !(ev.shiftKey && !/^[a-z]$/i.test(ev.key))) {
         if (!(ev.code in st.learned)) st.nLearned++;
         st.learned[ev.code] = ev.key;
       }
@@ -87,8 +98,23 @@
   if (mq) {
     var onMq = function () { st.desk = !!mq.matches; cls('gg-desk', st.desk); checkWide(); };
     if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+    if (mqc) { if (mqc.addEventListener) mqc.addEventListener('change', checkWide); else if (mqc.addListener) mqc.addListener(checkWide); }
   }
   GG.on('settings:changed', function (p) { if (p && p.keys && p.keys.indexOf('layout') >= 0) checkWide(); });
+
+  // v1.5 review: the keyboard layout map (navigator.keyboard.getLayoutMap(): Chromium, secure origin) names the keycaps
+  // (AZERTY: KeyA prints Q). Asked at boot on a computer, else on the first key label; 'input:layoutmap' when it lands or
+  // the layout changes ('layoutchange' where supported), so the setlist legend and Settings > Keys re-render.
+  I.askLayoutMap = function (again) {
+    if (lmapAsked && !again) return; lmapAsked = true;
+    try {
+      var k = navigator.keyboard;
+      if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; GG.emit('input:layoutmap', {}); }, function () {});
+    } catch (e) { /* none */ }
+  };
+  I.layoutMap = function () { return LMAP; };
+  try { if (navigator.keyboard && navigator.keyboard.addEventListener) navigator.keyboard.addEventListener('layoutchange', function () { if (lmapAsked) I.askLayoutMap(true); }); } catch (e) { /* none */ }
+  if (st.desk) I.askLayoutMap();
 
   I.capture = function (fn) {
     var tok = { fn: fn };

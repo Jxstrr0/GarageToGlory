@@ -23702,7 +23702,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   P.resetKeys = function (s, kind) { var full = mapOf(s); if (P.KEY_DEFAULTS[kind]) full[kind] = P.KEY_DEFAULTS[kind].slice(); return storedMap(full); };
   var CODE_LABEL = { Space: 'Space', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', IntlBackslash: '\\',
     Semicolon: ';', Quote: '\'', Comma: ',', Period: '.', Slash: '/', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Backspace: '⌫' };
-  P.keyLabel = function (code, layoutMap, learned) {
+  P.keyLabel = function (code, layoutMap, learned, sides) {
     var v = null;
     if (layoutMap) v = typeof layoutMap.get === 'function' ? layoutMap.get(code) : layoutMap[code];
     if ((typeof v !== 'string' || v.length !== 1) && learned) v = learned[code];
@@ -23713,8 +23713,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     m = /^Numpad(\d)$/.exec(code);
     if (m) return 'Num ' + m[1];
     m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code);
-    if (m) return m[1] === 'Control' ? 'Ctrl' : m[1];
+    if (m) return (sides ? m[2].charAt(0) + ' ' : '') + (m[1] === 'Control' ? 'Ctrl' : m[1]);
     return CODE_LABEL[code] || code;
+  };
+  P.keySides = function (s, code) {
+    var m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code || '');
+    if (!m) return false;
+    var other = m[1] + (m[2] === 'Left' ? 'Right' : 'Left'), full = mapOf(s), mine = false, theirs = false;
+    P.KEY_KINDS.forEach(function (k) { if (full[k].indexOf(code) >= 0) mine = true; if (full[k].indexOf(other) >= 0) theirs = true; });
+    return mine && theirs;
   };
   P.calibFor = function (s, input) {
     s = s && s.calib && s.calibKb ? s : P.normalize(s || P.get());
@@ -52000,16 +52007,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var MODS = { Shift: 1, Control: 1, Alt: 1, AltGraph: 1, Meta: 1, OS: 1, CapsLock: 1, Fn: 1, FnLock: 1, Hyper: 1, Super: 1, Symbol: 1, SymbolLock: 1, NumLock: 1, ScrollLock: 1 };
   var NOKEY = { Unidentified: 1, Process: 1, Dead: 1 };
   var mq = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  var mqc = window.matchMedia ? window.matchMedia('(any-pointer: coarse)') : null;
+  function deskAuto() { return st.desk && !(mqc && mqc.matches); }
   var st = { desk: !!(mq && mq.matches), mode: 'touch', kbSeen: false, learned: {}, nLearned: 0, lastReal: null, live: false, wide: false,
     cap: null, capStale: null, down: {}, resizeT: 0, pending: false };
-  st.mode = st.desk ? 'keys' : 'touch';
+  st.mode = deskAuto() ? 'keys' : 'touch';
+  var LMAP = null, lmapAsked = false;
 
   function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
   function typing(t) {
     if (!t || t.nodeType !== 1) return false;
     var n = t.nodeName;
-    return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
+    if (n === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(t.type || 'text');
+    return n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
   }
+  I.typing = typing;
   I.real = function (ev) {
     return !!(ev && ev.isTrusted && ev.code && !ev.isComposing && ev.keyCode !== 229 && !NOKEY[ev.key] && !typing(ev.target));
   };
@@ -52020,7 +52032,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     GG.emit('input:mode', { mode: m });
   }
   I.layoutPref = function () { var l = prefs().layout; return l === 'phone' || l === 'wide' ? l : 'auto'; };
-  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, st.desk, I.layoutPref()) : false; }
+  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, deskAuto(), I.layoutPref()) : false; }
   function checkWide() {
     if (st.live) { st.pending = true; return; }
     st.pending = false;
@@ -52035,7 +52047,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (I.real(ev) && !MODS[ev.key]) {
       st.lastReal = ev.code;
       if (!st.kbSeen) st.kbSeen = true;
-      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key) {
+      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key &&
+        !(ev.shiftKey && !/^[a-z]$/i.test(ev.key))) {
         if (!(ev.code in st.learned)) st.nLearned++;
         st.learned[ev.code] = ev.key;
       }
@@ -52060,8 +52073,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   if (mq) {
     var onMq = function () { st.desk = !!mq.matches; cls('gg-desk', st.desk); checkWide(); };
     if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+    if (mqc) { if (mqc.addEventListener) mqc.addEventListener('change', checkWide); else if (mqc.addListener) mqc.addListener(checkWide); }
   }
   GG.on('settings:changed', function (p) { if (p && p.keys && p.keys.indexOf('layout') >= 0) checkWide(); });
+
+  I.askLayoutMap = function (again) {
+    if (lmapAsked && !again) return; lmapAsked = true;
+    try {
+      var k = navigator.keyboard;
+      if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; GG.emit('input:layoutmap', {}); }, function () {});
+    } catch (e) { /* none */ }
+  };
+  I.layoutMap = function () { return LMAP; };
+  try { if (navigator.keyboard && navigator.keyboard.addEventListener) navigator.keyboard.addEventListener('layoutchange', function () { if (lmapAsked) I.askLayoutMap(true); }); } catch (e) { /* none */ }
+  if (st.desk) I.askLayoutMap();
 
   I.capture = function (fn) {
     var tok = { fn: fn };
@@ -54940,6 +54965,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
   GG.on('ui:wide', function () { ['gig-set', 'gig-results'].forEach(function (id) { var e = ui.get && ui.get(id); if (e && G) e.rerender(); }); });
   GG.on('input:mode', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });
+  GG.on('input:layoutmap', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v1.5 review
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
@@ -55391,12 +55417,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   /* ---- v1.5 "Desktop": gig keys (plan_contract_1.5 §4.3) ---------------------------------------------------- */
   var CARD_ARM = 600, CTRL_BLOCK = { KeyS: 1, KeyD: 1, KeyF: 1, KeyP: 1 };
-  var LMAP = null, lmapAsked = false;
-  function askLayoutMap() {   // navigator.keyboard.getLayoutMap() (Chromium, secure origin) names the keycaps (AZERTY: A is Q)
-    if (lmapAsked) return; lmapAsked = true;
-    try { var k = navigator.keyboard; if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; }, function () {}); } catch (e) { /* none */ }
-  }
-  ui.keyLabel = function (code) { askLayoutMap(); return P.keyLabel(code, LMAP, GG.input && GG.input.learned ? GG.input.learned() : null); };
+  function askLayoutMap() { if (GG.input && GG.input.askLayoutMap) GG.input.askLayoutMap(); }
+  ui.keyLabel = function (code) {
+    askLayoutMap();
+    var I = GG.input;
+    return P.keyLabel(code, I && I.layoutMap ? I.layoutMap() : null, I && I.learned ? I.learned() : null, P.keySides(P.get(), code));
+  };
   function kcap(text) { return el('span.kcap', text); }
   ui.kcap = kcap;
   function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
@@ -55406,7 +55432,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function liveMode() { return G.mode === 'play' || G.mode === 'count' || G.mode === 'hold'; }
   function keyId(ev) { return ev.code || P.codeOf(ev.key) || ''; }
   function stampOf(ev) { var now = performance.now(), t = ev.timeStamp; return t > 0 && Math.abs(t - now) < 1000 ? t : now; }
-  function typingIn(t) { if (!t || t.nodeType !== 1) return false; var n = t.nodeName; return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable; }
+  function typingIn(t) { return ui.isTyping ? ui.isTyping(t) : !!(t && t.nodeType === 1 && /^(INPUT|TEXTAREA|SELECT)$/.test(t.nodeName)); }   // v1.5 review: ui.isTyping's rule
   function confirmKey(ev, id) { return ev.key === 'Enter' || ev.key === ' ' || id === 'Space' || id === 'Enter' || id === 'NumpadEnter'; }
   function lanesNow() { return G.chart ? Math.max(G.chart.lanes || 4, 1) : G.lanes; }
   function freezeKeys() {
@@ -55923,7 +55949,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
-      s.root.addEventListener('contextmenu', function (e) { if (G) e.preventDefault(); });
+      s.root.addEventListener('contextmenu', function (e) { if (G && (G.input === 'keys' || (GG.input && GG.input.desk && GG.input.desk()))) e.preventDefault(); });
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
       d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),
@@ -59525,6 +59551,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function rebuild() { if (RB) return; var e = ui.get && ui.get('settings'); if (e) e.rerender(); }
   GG.on('ui:wide', rebuild);
   GG.on('input:mode', rebuild);
+  GG.on('input:layoutmap', rebuild);   // v1.5 review: the keycap names landed (AZERTY / QWERTZ)
   GG.on('ui:stack', function () {
     var c = ui.get && ui.get('calib'), st = ui.get && ui.get('settings');
     if (c && st && ui.top() === 'calib' && c.data && c.data.docked && wideNow()) st.root.classList.remove('hidden');

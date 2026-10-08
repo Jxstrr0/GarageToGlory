@@ -187,6 +187,10 @@ test('keyLabel: layout map > learned > the code', () => {
   eq(P.keyLabel('KeyA', { KeyA: 'q' }), 'Q', 'a plain object works as a map');
   eq(P.keyLabel('KeyA', null, { KeyA: 'q' }), 'Q', 'learned');
   eq(P.keyLabel('KeyA'), 'A'); eq(P.keyLabel('Digit1'), '1'); eq(P.keyLabel('ShiftLeft'), 'Shift'); eq(P.keyLabel('ShiftRight'), 'Shift');
+  // v1.5 review: both Shifts bound -> the labels name the side
+  eq(P.keyLabel('ShiftRight', null, null, true), 'R Shift'); eq(P.keyLabel('ControlLeft', null, null, true), 'L Ctrl');
+  const sb = P.normalize({ keymap: P.bindKey(P.normalize({}), 'drums', 1, 'ShiftRight').keymap });
+  eq([P.keySides(sb, 'ShiftRight'), P.keySides(sb, 'ShiftLeft'), P.keySides(P.normalize({}), 'ShiftLeft'), P.keySides(sb, 'KeyA')], [true, true, false, false]);
   eq(P.keyLabel('Space'), 'Space'); eq(P.keyLabel('Space', null, { Space: ' ' }), 'Space'); eq(P.keyLabel('ShiftLeft', null, { ShiftLeft: 'Shift' }), 'Shift');
   eq(P.keyLabel('Semicolon', map), 'M'); eq(P.keyLabel('Semicolon'), ';'); eq(P.keyLabel('Numpad4'), 'Num 4'); eq(P.keyLabel('ArrowLeft'), '←');
   eq(P.keyLabel('IntlRo'), 'IntlRo');

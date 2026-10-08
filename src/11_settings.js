@@ -195,7 +195,8 @@
     Semicolon: ';', Quote: '\'', Comma: ',', Period: '.', Slash: '/', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Backspace: '⌫' };
   // A keycap's text: the layout map (navigator.keyboard.getLayoutMap(): a Map or a plain object) > what this session saw that
   // key print (GG.input learned) > the code itself (KeyA -> A, Digit1 -> 1, ShiftLeft -> Shift).
-  P.keyLabel = function (code, layoutMap, learned) {
+  // sides (v1.5 review; P.keySides): 'L Shift' / 'R Shift' (Ctrl, Alt, Meta too) when both sides are bound.
+  P.keyLabel = function (code, layoutMap, learned, sides) {
     var v = null;
     if (layoutMap) v = typeof layoutMap.get === 'function' ? layoutMap.get(code) : layoutMap[code];
     if ((typeof v !== 'string' || v.length !== 1) && learned) v = learned[code];
@@ -206,8 +207,16 @@
     m = /^Numpad(\d)$/.exec(code);
     if (m) return 'Num ' + m[1];
     m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code);
-    if (m) return m[1] === 'Control' ? 'Ctrl' : m[1];
+    if (m) return (sides ? m[2].charAt(0) + ' ' : '') + (m[1] === 'Control' ? 'Ctrl' : m[1]);
     return CODE_LABEL[code] || code;
+  };
+  // true when code is a Left / Right modifier and the other side is bound too (in any kind): its label names the side
+  P.keySides = function (s, code) {
+    var m = /^(Shift|Control|Alt|Meta)(Left|Right)$/.exec(code || '');
+    if (!m) return false;
+    var other = m[1] + (m[2] === 'Left' ? 'Right' : 'Left'), full = mapOf(s), mine = false, theirs = false;
+    P.KEY_KINDS.forEach(function (k) { if (full[k].indexOf(code) >= 0) mine = true; if (full[k].indexOf(other) >= 0) theirs = true; });
+    return mine && theirs;
   };
   // Timing per input (K4: same windows; each field from its own measured source). ms.
   P.calibFor = function (s, input) {

@@ -202,6 +202,7 @@
   function rebuild() { if (RB) return; var e = ui.get && ui.get('settings'); if (e) e.rerender(); }
   GG.on('ui:wide', rebuild);
   GG.on('input:mode', rebuild);
+  GG.on('input:layoutmap', rebuild);   // v1.5 review: the keycap names landed (AZERTY / QWERTZ)
   // The key calibration opened from Settings > Keys in the PC layout docks over the timing column: Settings stays in view
   // (inert under it) while the calibration runs (ui hides the layers under a full screen; this un-hides that one).
   GG.on('ui:stack', function () {
