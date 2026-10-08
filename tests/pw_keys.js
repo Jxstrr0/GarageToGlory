@@ -23,7 +23,7 @@
 //              touch audio (fallback).
 //   phone      390x844 phone context: no Keys section, Layout row, calib input seg, gig-keys, gig-pause-keys, keycaps.
 //   wide-gig   the PC layout's highway at 1280x720 / 1440x900 / 1920x1080, 4 and 6 lanes: data-lanes, laneW = width / lanes,
-//              wide gems, note travel time == the phone's, the stage frame to 0.45 of the highway, B bounds (when 5w is in
+//              wide gems, note travel time == the phone's, the stage frame to 0.1 of the highway, B bounds (when 5w is in
 //              the tree); a resize 1440 -> 800 while paused re-lays it out (laneW right after resume).
 // Run: node build.js && META_ONLY=keys timeout 500 node tests/pw_keys.js
 const { open, checker } = require('./_pw');
@@ -739,7 +739,7 @@ async function wideGig() {
         c.ok(Math.abs(g.laneW - g.cw / lanes) < 0.6 && g.gemW === Math.min(g.laneW - 20, 100), `${tag} ${lanes}: laneW ${g.laneW.toFixed(1)} = width / lanes, gem ${g.gemW.toFixed(1)}`);
         c.ok(Math.abs(g.look - g.expLook) < 1e-9, `${tag} ${lanes}: note travel time ${g.look.toFixed(3)} s == the phone's`);
         c.ok(g.hint, `${tag} ${lanes}: "Esc pause" hint (gig-hint) in the PC layout`);
-        if (g.frame) c.ok(Math.abs(g.frame.bottom - Math.round(g.H - g.hw.t - 0.45 * g.hw.h)) <= 1, `${tag} ${lanes}: stage frame to 0.45 of the highway (${g.frame.bottom})`);
+        if (g.frame) c.ok(Math.abs(g.frame.bottom - Math.round(g.H - g.hw.t - 0.1 * g.hw.h)) <= 1, `${tag} ${lanes}: stage frame to 0.1 of the highway (kit just above it) (${g.frame.bottom})`);
         if (g.hw.w < g.W * 0.9) {   // 5w (Lane W) sizes the highway: B bounds
           const lo = Math.max(lanes * 110, Math.min(0.46 * g.W, lanes * 140)) - 2, hi = Math.min(lanes * 140, Math.max(0.46 * g.W, lanes * 110)) + 2;
           c.ok(g.hw.w >= lo && g.hw.w <= hi && g.hw.h >= 298 && g.hw.h <= 542 && Math.abs(g.hw.l + g.hw.w / 2 - g.W / 2) < 3, `${tag} ${lanes}: B highway bounds ` + JSON.stringify(g.hw));
