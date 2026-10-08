@@ -54858,7 +54858,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       guardRaf = 0;
       if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
       var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.45 * hw.height : 0)) });
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.1 * hw.height : 0)) });
     });
   }
   function restoreScene() {   // back to the garage (the stage hands its GPU memory back)

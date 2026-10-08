@@ -32,7 +32,7 @@
 //   hidden page restarts the song. The between card / results take Enter / Space only from a fresh press 600 ms after they
 //   show (focused then when playing on keys or in gg-kbnav). Keycaps in the zones (G.caps), legends gig-keys (setlist),
 //   gig-pause-keys (pause card) when GG.input.showKeyUI(), gig-hint ("Esc pause") in the PC layout. PC layout (package B):
-//   data-lanes on .gig-hw, wider gems, a translucent highway, the stage frame down to 0.45 of the highway, w2 columns in the
+//   data-lanes on .gig-hw, wider gems, a translucent highway, the stage frame down to 0.1 of the highway, w2 columns in the
 //   setlist + results; 'ui:wide' re-lays the highway out in every mode. GG.input.gigLive(true) at count-in / resume.
 // v1.3.1 Simulate (plan_1.3.1 §1.1): the setlist sheet's foot = [Auto-pick] [⏩ Simulate this gig] (btn-gig-sim; a story show
 //   or the lesson's first gig: a dim note gig-sim-no) + what it plays at (gig-sim-why), then the big "Start the show". A tap
@@ -257,8 +257,8 @@
       guardRaf = 0;
       if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
       var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-      // v1.5 PC layout (B): the stage runs down behind the highway's translucent top (0.45 of it), showing on both sides
-      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.45 * hw.height : 0)) });
+      // v1.5 PC layout (B): the stage runs down behind the highway's translucent top (0.1 of it: the kit sits just above the highway, mockup B), showing on both sides
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.1 * hw.height : 0)) });
     });
   }
   function restoreScene() {   // back to the garage (the stage hands its GPU memory back)
