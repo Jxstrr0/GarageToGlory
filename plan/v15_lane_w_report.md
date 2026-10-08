@@ -38,3 +38,8 @@ Edited only: `src/5w_ui_wide.js` (new), `src/40_render_core.js`, `src/42_render_
   runs nothing: run it without META_ONLY.
 ## Gaps
 - Merch table, trophies list, seat / genre cards stay one wide column (no hooks). Region-map labels scale with the SVG.
+## Re-verify (resumed run, 2026-10-08)
+- Branch tree alone: build 5,278,360 B, node SUITE ALL PASS, `pw_freeze` (no META_ONLY) 390/440/844l ALL PASS 5 each.
+- `pw_wide` on the W tree alone fails only where I / N hooks are missing (layout 1/81: 1280 garage hotspots; gig 7/39: 55
+  stage-frame guard + 6-lane width) -> integrate W after I + N. On a temp I+N+W merge (5,338,973 B): layout 93, gig 45,
+  switch 8, pref 10 ALL PASS; perf 9 passed alone 3 of 4 runs, the last two in a row (load ~8; one run's p95 ratio missed).
