@@ -21,7 +21,9 @@ Edited only: `src/5w_ui_wide.js` (new), `src/40_render_core.js`, `src/42_render_
   timing; the untouched stage-0 tree drifts on the same screens in the same run, and they pass alone. Matrix 390: garage 223,
   stage 166, settings, title, phoneqa, gig, seats, tour, shop, flow, tutorial, rival, label PASS. 440: garage, stage, settings,
   title, phoneqa, gig, seats, tour PASS. Load-only fails, each also failing on stage-0 or passing alone twice: gig sync/sync2,
-  perf `pre` (audio build budget) and `ratio` (governor timing at 440), world calendar/van (click timeouts).
+  perf `pre` (audio build budget) and `ratio` (governor timing at 440), world calendar/van (click timeouts). Not covered (load):
+  pw_seq hit its 1500 s timeout (hash/kit/real/vox passed); creator, logo, recap, ending, hof, trophies, fans, drama,
+  seat_audio, bands(_render) not run (no Lane W code path on a phone: CSS is gg-gated, 40/42/60 no-ops off gg-wide).
 - **Desktop** (merged I+N+W): `pw_wide` layout 93 (4 sizes), gig 45, switch 8, perf 9 (2.40 MP at 1440 + 1920 dpr 2, p95
   1920 = 1.17×1440, 1024x1366 keeps ratio 2), pref 10. `desktopqa` 1440 193/193, 1280 191, 800 191, 1920 189/190 (goto timeout:
   raised). `pw_keys wide-gig` 40/40 (B bounds), `pw_nav` 12/12 sections.
