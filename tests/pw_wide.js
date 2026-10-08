@@ -10,10 +10,10 @@
 //           height (60's updateInsets), insets.left / right 0; the laptop's tab rail; Settings' rail + Keys chips | timing;
 //           the songwriter's tools column left of the grid, the header across, Loop / Song / Save under the grid.
 //           800x900: no gg-wide, the panel full width, insets without left / right, pxBudget null.
-//   gig     4 and 6 drums: the highway centred, clamp(lanes x 110, 46vw, lanes x 140) x clamp(300, 48vh, 540), 16 px off the
+//   gig     4 and 6 drums + 5-string bass: the highway centred, clamp(lanes x 110, 46vw, lanes x 140) x clamp(300, 48vh, 540), 16 px off the
 //           bottom, the stage visible on both sides (the 3D canvas spans the window), the stage frame below the highway's
 //           top, the stage's horizontal field of view <= 100 deg, the song header max 720 centred, "Esc pause" right of the
-//           highway (when the merged tree has it).
+//           highway (when the merged tree has it); your seat's head + torso (stage.info().you2d) above the highway.
 //   switch  1440 -> 800 -> 1440 with the planner open: gg-wide off / on ('ui:wide'), insets.bottom re-measured each way
 //           (= the panel's height), the camera re-fits (hotspots back above the panel); mid-song the switch waits for a
 //           pause (gigLive), then lands.
@@ -43,9 +43,9 @@ async function boot(vp, opts) {
 async function garage(page, o) {
   await page.evaluate(o => {
     GG.ui.closeAll();
-    GG.main.quickStart({ seed: o.seed || 4242, slot: '1', bandId: 'hail_damage', openCard: false });
+    GG.main.quickStart({ seed: o.seed || 4242, slot: '1', bandId: 'hail_damage', openCard: false, seat: o.seat });
     const s = GG.state; GG.ui.closeAll(); s.card = null; s.phase = 'plan'; s.liveGig = null; GG.ui.gigAutoplay = false;
-    if (o.lanes) { s.gear = Object.assign({}, s.gear, { lanes: o.lanes }); s.songs.length = 0; }
+    if (o.lanes) { s.gear = Object.assign({}, s.gear, o.seat ? { seatLanes: Object.assign({}, s.gear.seatLanes, { [o.seat]: o.lanes }) } : { lanes: o.lanes }); s.songs.length = 0; }
     s.fund = Math.max(s.fund, 2000);
     while (s.songs.length < 3) GG.songs.jam(s, GG.RNG(40 + s.songs.length));
     GG.main.sync();
@@ -190,8 +190,8 @@ async function gig() {
     const tag = tagOf(vp);
     const { page, errors, close } = await boot(vp);
     try {
-      for (const lanes of [4, 6]) {
-        await garage(page, { lanes, seed: 5150 + lanes });
+      for (const [lanes, seat] of [[4], [6], [5, 'bass']]) {   // v1.5 review: + a string seat (the spot camera)
+        await garage(page, { lanes, seed: 5150 + lanes, seat });
         await page.evaluate(() => { const st = GG.render && GG.render.stage; window.__frames = []; if (st && st.setFrame && !st.__spyW) { const f = st.setFrame; st.setFrame = function (o) { window.__frames.push(o); return f.apply(this, arguments); }; st.__spyW = 1; } });
         await startGig(page);
         await page.waitForTimeout(700);
@@ -199,7 +199,7 @@ async function gig() {
           const hw = document.querySelector('.gig-hw').getBoundingClientRect(), cv = document.querySelector('#scene canvas'), bar = document.querySelector('.gig-bar').getBoundingClientRect(), hint = document.querySelector('[data-testid="gig-hint"]');
           const st = GG.render.stage && GG.render.stage.info ? GG.render.stage.info() : {};
           return { lanes: GG.debug('gigui').lanes, hw: { l: hw.left, t: hw.top, w: hw.width, h: hw.height, b: hw.bottom }, cv: cv ? { w: cv.getBoundingClientRect().width, h: cv.getBoundingClientRect().height } : null,
-            bar: { l: bar.left, w: bar.width }, hint: hint ? hint.getBoundingClientRect() : null, frame: (window.__frames || []).slice(-1)[0] || null, hFov: st.hFov, built: st.built, W: innerWidth, H: innerHeight };
+            bar: { l: bar.left, w: bar.width }, hint: hint ? hint.getBoundingClientRect() : null, frame: (window.__frames || []).slice(-1)[0] || null, hFov: st.hFov, you2d: st.you2d || null, camera: st.camera, built: st.built, W: innerWidth, H: innerHeight };
         });
         const n = g.lanes, expW = Math.min(Math.max(n * 110, Math.min(0.46 * g.W, n * 140)), g.W - 32), expH = Math.max(300, Math.min(0.48 * g.H, 540));
         c.ok(n === lanes, `${tag}: ${n} lanes`);
@@ -208,6 +208,10 @@ async function gig() {
         if (g.built) {
           c.ok(g.hFov > 30 && g.hFov <= 100.05, `${tag} ${n} lanes: the stage's horizontal field of view ${g.hFov} deg <= 100`);
           c.ok(g.frame && g.H - g.frame.bottom > g.hw.t, `${tag} ${n} lanes: the stage frame runs below the highway's top ` + JSON.stringify(g.frame));
+          // v1.5 review: the hFov cap zooms in; your seat (kit drummer / spot player) keeps head + torso above the highway (the
+          // throne sits at the band window's bottom edge, as the uncapped / phone framing has it)
+          if (g.you2d) c.ok(g.you2d.head < g.hw.t && g.you2d.torso < g.hw.t, `${tag} ${n} lanes: your ${g.camera} seat above the highway (top ${Math.round(g.hw.t)}) ` + JSON.stringify(g.you2d));
+          else c.ok(false, `${tag} ${n} lanes: no you2d from stage.info() (camera ${g.camera})`);
         }
         c.ok(g.bar.w <= 721 && near(g.bar.l + g.bar.w / 2, g.W / 2, 2), `${tag}: the song header max 720 centred (${Math.round(g.bar.w)})`);
         if (g.hint) c.ok(g.hint.left >= g.hw.l + g.hw.w + 10 && g.hint.right <= g.W, `${tag} ${n} lanes: "Esc pause" right of the highway (${Math.round(g.hint.left)})`);
