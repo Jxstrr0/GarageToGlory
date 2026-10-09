@@ -508,6 +508,7 @@
       if (Math.abs(ms - G.pf.syncDisp) >= 2) { G.pf.syncDisp = ms; GG.prefs.set({ syncDisp: ms }); }
     }
     var r = G.ses.endSong();
+    if (r) G.scBase = (G.scBase || 0) + r.perfect * 100 + r.good * 50;   // v1.5.1: the score card's points so far
     G.mode = 'between';
     showBetween(r);
   }
@@ -779,6 +780,7 @@
       if (G.mode === 'play' && t - G.D >= ch.duration + 0.5) { endSong(); }
     }
     if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + G.drawOff, p);   // v0.6.1 calibration (v0.8.3: G.drawOff)
+    if (G && G.dom && G.dom.score) scoreCard(false);   // v1.5.1 (PC layout only)
     if (G && G.ses) {
       var c = Math.round(G.ses.crowd);
       if (c !== G.crowdN) { G.crowdN = c; G.dom.meter.style.width = c + '%'; stageCall('setCrowdLevel', G.ses.crowd); }
@@ -1439,12 +1441,37 @@
   // v1.5: redraw a highway that isn't animating (a paused song or a card, after a re-layout)
   function still() { if (!G || !G.x || !G.bg) return; if (G.chart && G.fonts) draw((G.paused ? G.pauseT : G.t) + G.drawOff, performance.now()); else drawIdle(); }
   // v1.5: "Esc pause" by the highway, in the PC layout when the song is played on keys (5w places it)
+  // v1.5.1: the score card right of the highway (mockup B; PC layout only): this gig's points (100 a perfect, 50 a good),
+  // the combo, the song's hit share so far (+ its bar), and the "Esc pause" hint under them when the song is on keys
   function gigHint() {
     if (!G || !G.dom) return;
-    var on = !!(G.caps && wideNow() && G.chart), h = G.dom.hint;
-    if (on && !h) h = G.dom.hint = el('div.gig-hint', { testid: 'gig-hint' }, [kcap('Esc'), ' pause']);
-    if (on && h && !h.parentNode && G.dom.hw.parentNode) G.dom.hw.parentNode.insertBefore(h, G.dom.hw.nextSibling);
+    var d = G.dom, wide = !!(wideNow() && G.chart), card = d.score;
+    if (wide && !card) {
+      card = d.score = el('div.gig-score', { testid: 'gig-score', 'aria-hidden': 'true' }, [el('div.gs-l', 'Score'), d.scN = el('div.gs-n', { testid: 'gig-score-n' }, '0'),
+        el('div.gs-row', [d.scC = el('span.gs-c', { testid: 'gig-score-combo' }, '×0'), d.scA = el('span.gs-a', { testid: 'gig-score-acc' }, '–')]),
+        el('div.gs-bar', d.scB = el('i'))]);
+      G.scKey = '';
+    }
+    if (wide && !card.parentNode && d.hw.parentNode) d.hw.parentNode.insertBefore(card, d.hw.nextSibling);
+    else if (!wide && card && card.parentNode) card.parentNode.removeChild(card);
+    var on = !!(G.caps && wide), h = d.hint;
+    if (on && !h) h = d.hint = el('div.gig-hint', { testid: 'gig-hint' }, [kcap('Esc'), ' pause']);
+    if (on && h.parentNode !== card) card.appendChild(h);
     else if (!on && h && h.parentNode) h.parentNode.removeChild(h);
+    if (wide) scoreCard(true);
+  }
+  function scoreCard(force) {
+    var d = G && G.dom; if (!d || !d.score || !d.score.parentNode || !G.ses) return;
+    var p = performance.now(); if (!force && p - (G.scAt || 0) < 100) return;
+    G.scAt = p;
+    var x = G.ses.stats && G.ses.stats(), pf = x ? x.perfect : 0, gd = x ? x.good : 0, ms = x ? x.miss : 0, n = pf + gd + ms;
+    var pts = (G.scBase || 0) + pf * 100 + gd * 50, cb = x ? x.combo : 0, acc = n ? Math.round((pf + gd) / n * 100) : -1, key = pts + '|' + cb + '|' + acc;
+    if (key === G.scKey) return;
+    G.scKey = key;
+    d.scN.textContent = String(pts).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    d.scC.textContent = '×' + cb; d.scC.classList.toggle('hot', cb >= 10);
+    d.scA.textContent = acc < 0 ? '–' : acc + '% hit';
+    d.scB.style.width = (acc < 0 ? 0 : acc) + '%';
   }
 
   /* ---- Setlist picker ------------------------------------------------------------------------------------- */

@@ -14,7 +14,7 @@
 //     the sections (Keys: chips | the timing card), the key calibration docked over the timing column (.calib-docked); the
 //     gig = the highway centred under the stage (clamp(lanes x 110px, 46vw, lanes x 140px) x clamp(300px, 48vh, 540px),
 //     the stage showing on both sides; 55 frames the stage down to 0.45 of it), the song header / crowd / cards max 720,
-//     "Esc pause" right of the highway; van overlays a left column (max 440); the world map fits the window's height.
+//     the score card (+ "Esc pause") right of the highway; van overlays a left column (max 440); the world map fits the window's height.
 // The 3D side of the PC layout (insets, the pixel budget, the stage's field of view) is 40 / 42 / 60's.
 (function (GG) {
   if (typeof document === 'undefined') return;
@@ -99,6 +99,9 @@
     'html.gg-wide .seq-grid[data-lanes="4"] { width: 100%; max-width: 516px; margin: 0 auto; }',
     'html.gg-wide .seq-grid[data-lanes="5"] { width: 100%; max-width: 639px; margin: 0 auto; }',
     'html.gg-wide .seq-grid[data-lanes="6"] { width: 100%; max-width: 762px; margin: 0 auto; }',
+    // v1.5.1: 5 / 6 lanes keep the icon + name on one line (the phone's stacked pair clipped the icon in the 22 px row)
+    'html.gg-wide .seq-grid.wide .lh { flex-direction: row; gap: 3px; font-size: 10px; letter-spacing: .03em; line-height: normal; }',
+    'html.gg-wide .seq-grid.wide .lh span, html.gg-wide .seq-grid.wide .lh .ln { font-size: 10px; }',
     'html.gg-wide .full.seq:has(.seq-main) > .full-foot { padding-left: calc(max(16px, calc((100% - 1120px) / 2)) + 384px); }',
     'html.gg-wide .quick-main.w2 > .qs-title { margin-bottom: 8px; }',
     // the coach's tip reads in full (two lines) in the tools column
@@ -110,12 +113,19 @@
     'html.gg-wide .set-wide { display: grid; grid-template-columns: 196px minmax(0, 1fr); column-gap: 28px; align-items: start; }',
     'html.gg-wide .set-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 76px; }',
     'html.gg-wide .set-rail > .btn { justify-content: flex-start; width: 100%; padding: 0 14px; border-color: transparent; text-transform: none; letter-spacing: .01em; font-size: 15px; }',
+    'html.gg-wide .set-rail > .btn.on { background: var(--panel2); border-color: var(--line); box-shadow: inset 3px 0 0 var(--amber); color: var(--text); }',   // v1.5.1: follows the scroll
     'html.gg-wide .set-main { min-width: 0; }',
     'html.gg-wide .set-main [id^="set-"] { scroll-margin-top: 20px; }',
     'html.gg-wide .set-keys > .w2 > .w2-b > .set-keys-timing { margin-top: 0; }',
     'html.gg-wide .layer.calib-docked { left: auto; right: max(16px, calc((100% - 1120px) / 2)); top: 16px; bottom: 16px; width: min(440px, calc(100% - 32px)); }',
     'html.gg-wide .layer.calib-docked > .full { border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden; }',
     'html.gg-wide.gg-keys .back-row > [data-testid="btn-back"] { margin-right: 34px; }',
+    // v1.5.1: the docked calibration is as tall as what it shows (no empty run under the pad); the key test's progress dots (one per click / flash; filled once a tap or key is caught for it)
+    'html.gg-wide .layer.calib-docked > .full { bottom: auto; max-height: 100%; } html.gg-wide .layer.calib-docked .full-body { flex: 0 1 auto; }',
+    'html.gg-wide .calib-dots { display: flex; justify-content: center; gap: 10px; margin: 14px 0 4px; }',
+    'html.gg-wide .calib-dots > i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, .1); border: 2px solid var(--line); box-sizing: border-box; }',
+    'html.gg-wide .calib-dots > i.on { border-color: var(--amber); }',
+    'html.gg-wide .calib-dots > i.tap { background: var(--amber); border-color: var(--amber); }',
 
     // ---- the gig: the highway centred under the stage, the stage on both sides ----
     'html.gg-wide .full.gig .full-body { align-items: center; }',
@@ -125,13 +135,22 @@
     'html.gg-wide .full.gig .gig-hw canvas { height: 100%; }',
     'html.gg-wide .full.gig .gig-bar, html.gg-wide .full.gig .gig-crowd { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
     'html.gg-wide .full.gig .gig-mid { left: max(16px, calc((100% - 720px) / 2)); right: max(16px, calc((100% - 720px) / 2)); }',
-    'html.gg-wide .full.gig .gig-hint { right: auto; bottom: calc(16px + clamp(300px, 48vh, 540px) * .42); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); }',
-    // the "Esc pause" card right of the highway (half its width per lane count + 20 px)
-    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
-    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
-    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
+    // v1.5.1: the score card right of the highway (mockup B; half the highway's width per lane count + 20 px), "Esc pause" in it
+    'html.gg-wide .full.gig .gig-score { position: absolute; z-index: 2; width: 140px; bottom: calc(16px + clamp(300px, 48vh, 540px) * .3); padding: 12px 14px; border-radius: 14px;'
+      + ' border: 1px solid var(--line); background: rgba(15, 20, 32, .84); color: var(--text); pointer-events: none; box-sizing: border-box; }',
+    'html.gg-wide .gig-score .gs-l { color: var(--faint); font: 800 10px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; }',
+    'html.gg-wide .gig-score .gs-n { font: 900 26px/1.15 var(--display, var(--font)); font-variant-numeric: tabular-nums; white-space: nowrap; }',
+    'html.gg-wide .gig-score .gs-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 700 12px/1.4 var(--font); color: var(--dim); white-space: nowrap; }',
+    'html.gg-wide .gig-score .gs-c { padding: 0 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--text); font-weight: 900; }',
+    'html.gg-wide .gig-score .gs-c.hot { border-color: var(--amber); color: var(--amber); }',
+    'html.gg-wide .gig-score .gs-bar { height: 4px; margin-top: 8px; border-radius: 99px; background: rgba(255, 255, 255, .1); overflow: hidden; }',
+    'html.gg-wide .gig-score .gs-bar > i { display: block; height: 100%; width: 0; background: var(--amber); }',
+    'html.gg-wide .gig-score .gig-hint { position: static; margin-top: 10px; padding: 0; border: 0; background: none; font-size: 12px; }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-score { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-score { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-score { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
     // v1.5 review: a window resized narrower mid-song keeps the PC layout (gigLive); below 1000 px the card has no room
-    '@media (max-width: 999px) { html.gg-wide .full.gig .gig-hint { display: none; } }',
+    '@media (max-width: 999px) { html.gg-wide .full.gig .gig-score { display: none; } }',
 
     // ---- the rival's set and the award nights (stage scenes like the gig): their panels centred, max 720 ----
     'html.gg-wide .full.rvset .rs-bar, html.gg-wide .full.rvset .rs-banner { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',

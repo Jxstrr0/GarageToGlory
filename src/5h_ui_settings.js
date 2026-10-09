@@ -200,6 +200,25 @@
       } }, t[1]);
     }));
   }
+  // v1.5.1 (PC layout only: the rail exists there): the rail follows the section in view (the last one whose top has passed
+  // a third of the way down; the last one at the bottom of the scroll). .on + aria-current on its button.
+  function follow(s) {
+    var sc = s.body, raf = 0;
+    if (sc._ggMark) { setTimeout(sc._ggMark, 0); return; }   // (a re-render keeps the body and its listener)
+    function mark() {
+      raf = 0;
+      var bs = sc.querySelectorAll('.set-rail > .btn'); if (!bs.length) return;
+      var top = sc.getBoundingClientRect().top, lim = top + Math.min(160, sc.clientHeight / 3), cur = null, end = sc.scrollHeight > sc.clientHeight + 2 && sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2;
+      for (var i = 0; i < bs.length; i++) {
+        var id = bs[i].getAttribute('data-testid').slice(9), x = sc.querySelector('#set-' + id);
+        if (x && (x.getBoundingClientRect().top <= lim || !cur || end)) cur = id;
+      }
+      for (i = 0; i < bs.length; i++) { var on = bs[i].getAttribute('data-testid') === 'set-rail-' + cur; bs[i].classList.toggle('on', on); if (on) bs[i].setAttribute('aria-current', 'true'); else bs[i].removeAttribute('aria-current'); }
+    }
+    sc._ggMark = mark;
+    sc.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(mark); }, { passive: true });
+    setTimeout(mark, 0);
+  }
   // The key UI and the PC layout can switch while Settings is open: rebuild it (never mid-rebind)
   function rebuild() { if (RB) return; var e = ui.get && ui.get('settings'); if (e) e.rerender(); }
   GG.on('ui:wide', rebuild);
@@ -319,7 +338,7 @@
       ]));
       body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'set-done', onclick: function () { ui.close(s.id); } }, 'Done'));
-      if (wide) s.body.appendChild(el('div.set-wide', [rail(s, keys), body]));
+      if (wide) { s.body.appendChild(el('div.set-wide', [rail(s, keys), body])); follow(s); }
       if (d && d.tab && !d._scrolled) {
         d._scrolled = true;
         var target = s.body.querySelector('#set-' + d.tab);
@@ -350,7 +369,7 @@
         if (K !== k || !k.running) return;
         if (ev.key === 'Escape' || ev.code === 'Escape') { stopTest(); if (ui.isOpen('calib')) s.rerender({ profile: s.data.profile, first: s.data.first, input: 'keys', docked: s.data.docked }); return; }
         var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
-        k.taps.push(t);
+        k.taps.push(t); dots(s);
         var pad = s.body && s.body.querySelector('[data-testid="calib-pad"]');
         if (pad) { pad.classList.add('hit'); setTimeout(function () { pad.classList.remove('hit'); }, 90); }
       });
@@ -407,7 +426,13 @@
     s.rerender(carry(s, { step: 'visual', audio: s.data.audio }));
     if (K.input === 'keys') keyTest(s);   // v1.5
   }
-  function count(s) { var e = s.body && s.body.querySelector('[data-testid="calib-count"]'); if (e && K) e.textContent = (K.kind === 'audio' ? 'Click ' : 'Flash ') + Math.min(K.n, N_CLICKS) + ' of ' + N_CLICKS; }
+  function count(s) { var e = s.body && s.body.querySelector('[data-testid="calib-count"]'); if (e && K) e.textContent = (K.kind === 'audio' ? 'Click ' : 'Flash ') + Math.min(K.n, N_CLICKS) + ' of ' + N_CLICKS; dots(s); }
+  // v1.5.1 (PC layout only: the dots exist there): one dot per click / flash; .on = it has come, .tap = a tap or key caught for it
+  function dots(s) {
+    var w = s && s.body && s.body.querySelector('[data-testid="calib-dots"]'); if (!w) return;
+    var n = K ? Math.min(K.n, N_CLICKS) : 0, t = K ? Math.min(K.taps.length, N_CLICKS) : 0;
+    for (var i = 0; i < w.children.length; i++) { w.children[i].classList.toggle('on', i < n); w.children[i].classList.toggle('tap', i < t); }
+  }
   function finishTest(s) {
     if (!K) return;
     var kind = K.kind, r = P.calibCompute(K.clicks.filter(function (x) { return x != null; }), K.taps, { interval: GAP });
@@ -422,7 +447,7 @@
     if (!K || !K.running || K.input === 'keys') return;   // v1.5: the key test counts keys only
     if (ev.cancelable) ev.preventDefault();
     var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
-    K.taps.push(t);
+    K.taps.push(t); dots(ui.get && ui.get('calib'));
     var pad = ev.currentTarget; if (pad && pad.classList) { pad.classList.add('hit'); setTimeout(function () { pad.classList.remove('hit'); }, 90); }
   }
   ui.define('calib', {
@@ -465,8 +490,10 @@
             : step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
           step === 'visual' ? el('div.calib-light', { testid: 'calib-light', onpointerdown: padTap }) : null,
           el('div.caps.center', { testid: 'calib-count', style: 'margin:10px 0' }, 'Get ready…'),
-          pad
+          pad,
+          wideNow() ? el('div.calib-dots', { testid: 'calib-dots', 'aria-hidden': 'true' }, Array.apply(null, Array(N_CLICKS)).map(function () { return el('i'); })) : null   // v1.5.1 (PC layout)
         ]);
+        dots(s);
         s.foot.appendChild(btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, 'Skip'));
         return;
       }
