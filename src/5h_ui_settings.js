@@ -216,7 +216,7 @@
       for (i = 0; i < bs.length; i++) { var on = bs[i].getAttribute('data-testid') === 'set-rail-' + cur; bs[i].classList.toggle('on', on); if (on) bs[i].setAttribute('aria-current', 'true'); else bs[i].removeAttribute('aria-current'); }
     }
     sc._ggMark = mark;
-    sc.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(mark); }, { passive: true });
+    sc.addEventListener('scroll', function () { if (!raf) raf = setTimeout(mark, 50); }, { passive: true });   // (a timer: rAF waits on a slow 3D frame)
     setTimeout(mark, 0);
   }
   // The key UI and the PC layout can switch while Settings is open: rebuild it (never mid-rebind)

@@ -1,7 +1,7 @@
 // pw_wide.js (v1.5 "Desktop", Lane W; plan_contract_1.5 §5 Lane W, §4.6 package B "Centred wide column"): the PC layout in
 // desktop contexts (tests/_pw.js open({ desktop: true }): no touch, a fine pointer + hover) at 1280x720, 1440x900, 1920x1080
 // (the PC layout) and 800x900 (a narrow window: the phone layout + the gg-desk niceties). PW_VIEW=<w>x<h> runs one size only.
-// Sections (META_ONLY=layout|gig|switch|perf|pref, comma-separated; default all), each inside `timeout 500`:
+// Sections (META_ONLY=layout|gig|switch|perf|pref|polish, comma-separated; default all), each inside `timeout 500`:
 //   layout  html classes (gg-desk, gg-keys, gg-wide only when wide), the 5w block last in <head>; no sideways overflow and
 //           every control inside the window on the garage, planner, laptop, gear shop, Settings > Keys, the songwriter
 //           editor, the setlist and the title; B's bounds: HUD max 1120 centred, the dock's button 480, the bottom panel
@@ -22,6 +22,8 @@
 //           ratio 2 on high (pxBudget null).
 //   pref    Settings "Layout": Phone forces the phone layout at 1440x900, PC forces the PC layout at 1050x900 (auto: phone),
 //           Auto goes back; set-layout-* buttons when the merged tree has them.
+//   polish  v1.5.1: label overlaps (planner open, drums + bass), keycap legends, Settings rail follow, songwriter lane icons,
+//           the gig score card (see the section).
 // Run: node build.js && META_ONLY=layout timeout 500 node tests/pw_wide.js
 const { open, checker } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -361,10 +363,109 @@ async function pref() {
   c.done();
 }
 
+/* ---- polish (v1.5.1) ------------------------------------------------------------------------------------------------- */
+// no two garage labels overlap (labelBox, camera at rest) with the planner open; keycap footer legends (kb-hints: one
+// .kcap per key, the text kept in data-text); the Settings rail follows the scroll (.on: Keys at the top, Audio after
+// scrolling to it, the last one at the bottom); the songwriter's 6 lane headers keep the icon inside the 22 px row
+// (>= 3 px clear top and bottom); the PC gig's score card right of the highway: points / combo / hit share move after
+// key hits, "Esc pause" inside it; 800x900 (no gg-wide): none of the PC-only pieces.
+const overlaps = lb => { const bad = []; for (let i = 0; i < lb.length; i++) for (let j = i + 1; j < lb.length; j++) { const a = lb[i], b = lb[j]; if (a.x == null || b.x == null) continue; if (Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2) bad.push(a.action + '/' + b.action + ' ' + [a.x, a.y, b.x, b.y].join(',')); } return bad; };
+async function polish() {
+  const c = checker('polish');
+  for (const vp of SIZES) {
+    const tag = tagOf(vp), wideWant = vp.width >= 1000 && vp.height >= 560 && vp.width >= 1.2 * vp.height;
+    const { page, errors, close } = await boot(vp);
+    try {
+      for (const seat of [undefined, 'bass']) {
+        await garage(page, { seat });
+        await settle3d(page);
+        const lb0 = await page.evaluate(() => GG.debug('render').labelBox || []);
+        c.ok(lb0.length >= 8 && !overlaps(lb0).length, `${tag} ${seat || 'drums'} garage: no label overlaps ` + overlaps(lb0).join(' | '));
+        await page.evaluate(() => GG.ui.openPlanner()); await waitScreen(page, 'plan'); await page.waitForTimeout(500); await settle3d(page);
+        const lb = await page.evaluate(() => GG.debug('render').labelBox || []);
+        const kit = lb.find(b => b.action === 'kit'), shop = lb.find(b => b.action === 'shop');
+        c.ok(lb.length >= 8 && !overlaps(lb).length, `${tag} ${seat || 'drums'} planner open: no label overlaps ` + overlaps(lb).join(' | '));
+        if (kit && shop && Math.abs(kit.x - shop.x) < (kit.w + shop.w) / 2) c.ok(Math.abs(kit.y - shop.y) >= (kit.h + shop.h) / 2 + 2, `${tag} ${seat || 'drums'} planner open: the kit and Gear shop labels clear (${kit.y} / ${shop.y})`);
+        if (!seat) {
+          const kb = await page.evaluate(() => { const h = document.querySelector('[data-testid="kb-hints"]'); return h ? { caps: [...h.querySelectorAll('.kcap')].map(k => k.textContent), text: h.dataset.text, parts: h.querySelectorAll('.kbh').length } : null; });
+          if (wideWant) c.ok(kb && kb.caps.join(' ') === 'Tab Enter Esc' && kb.parts === 3 && kb.text === 'Tab move · Enter pick · Esc close', `${tag} planner: footer legend as keycaps ` + JSON.stringify(kb));
+          else c.ok(!kb, `${tag} planner: no footer legend outside the PC layout`);
+        }
+        await page.evaluate(() => GG.ui.closeAll());
+      }
+
+      // Settings: the rail follows the scroll
+      await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('settings', { tab: 'keys' }); }); await waitScreen(page, 'settings'); await page.waitForTimeout(500);
+      const railOn = () => page.evaluate(() => [...document.querySelectorAll('.set-rail > .btn.on')].map(b => b.dataset.testid).join(','));
+      // (scroll events ride the frame: software GL at 1920 can take a while)
+      const railIs = async (...ids) => { await page.waitForFunction(ids => ids.includes([...document.querySelectorAll('.set-rail > .btn.on')].map(b => b.dataset.testid).join(',')), ids, { timeout: 5000 }).catch(() => {}); return railOn(); };
+      if (wideWant) {
+        const r0 = await railIs('set-rail-keys'); c.ok(r0 === 'set-rail-keys', `${tag} settings: opened on Keys, the rail marks Keys (${r0})`);
+        await page.evaluate(() => document.querySelector('#set-audio').scrollIntoView({ block: 'start' })); const r1 = await railIs('set-rail-audio');
+        c.ok(r1 === 'set-rail-audio', `${tag} settings: scrolled to Audio + timing, the rail follows (${r1})`);
+        await page.evaluate(() => { const b = document.querySelector('.layer[data-screen="settings"] .full-body'); b.scrollTop = b.scrollHeight; }); const r2 = await railIs('set-rail-saves');
+        c.ok(r2 === 'set-rail-saves', `${tag} settings: at the bottom the rail marks Saves (${r2})`);
+        await page.evaluate(() => { const b = document.querySelector('.layer[data-screen="settings"] .full-body'); b.scrollTop = 0; }); const r3 = await railIs('set-rail-play');
+        c.ok(r3 === 'set-rail-play', `${tag} settings: back at the top, Play (${r3})`);
+        await page.locator(tid('set-rail-look')).click(); const r4 = await railIs('set-rail-look', 'set-rail-saves');
+        c.ok(['set-rail-look', 'set-rail-saves'].includes(r4), `${tag} settings: a rail click lands on its section (${r4})`);
+      } else c.ok(!(await page.evaluate(() => document.querySelector('.set-rail'))), `${tag} settings: no rail outside the PC layout`);
+      await page.evaluate(() => GG.ui.closeAll());
+
+      // the songwriter: 6 drum lanes, the lane icons inside the header row
+      await garage(page, { lanes: 6, seed: 5156 });
+      await page.evaluate(() => GG.ui.openSketch()); await waitScreen(page, 'seq');
+      await page.evaluate(() => { const b = document.querySelector('[data-testid="btn-quick-tweak"]'); if (b) b.click(); });
+      await page.waitForFunction(() => !!document.querySelector('.seq-main .seq-grid'), null, { timeout: 10000 }); await page.waitForTimeout(300);
+      const lh = await page.evaluate(() => [...document.querySelectorAll('.seq-main .seq-grid .lh')].map(l => { const r = l.getBoundingClientRect(), i = l.querySelector('span:not(.ln)'); if (!i) return null; const q = i.getBoundingClientRect(); return { top: Math.round(q.top - r.top), bot: Math.round(r.bottom - q.bottom), dir: getComputedStyle(l).flexDirection }; }).filter(Boolean));
+      if (wideWant) c.ok(lh.length === 6 && lh.every(x => x.top >= 3 && x.bot >= 3), `${tag} songwriter 6 lanes: icons clear of the header's top / bottom ` + JSON.stringify(lh.slice(0, 2)));
+      else c.ok(lh.length === 6 && lh.every(x => x.dir === 'column'), `${tag} songwriter 6 lanes: the phone's stacked header kept ` + JSON.stringify(lh.slice(0, 1)));
+      await page.evaluate(() => GG.ui.closeAll());
+
+      // the gig's score card
+      if (vp.width >= 1000) {
+        await garage(page, { lanes: 4, seed: 5154 });
+        await startGig(page);
+        await page.waitForTimeout(300);
+        const card = () => page.evaluate(() => { const e = document.querySelector('[data-testid="gig-score"]'), hw = document.querySelector('.gig-hw').getBoundingClientRect(); if (!e) return null; const r = e.getBoundingClientRect();
+          return { l: r.left, r: r.right, t: r.top, b: r.bottom, hwR: hw.right, hwT: hw.top, hwB: hw.bottom, n: e.querySelector('[data-testid="gig-score-n"]').textContent, combo: e.querySelector('[data-testid="gig-score-combo"]').textContent, acc: e.querySelector('[data-testid="gig-score-acc"]').textContent,
+            hint: !!e.querySelector('[data-testid="gig-hint"]'), shown: getComputedStyle(e).display !== 'none', W: innerWidth }; });
+        const a = await card();
+        c.ok(a && a.shown && a.l >= a.hwR + 10 && a.r <= a.W && a.t > a.hwT && a.b < a.hwB, `${tag}: the score card right of the highway ` + JSON.stringify(a));
+        c.ok(a && a.hint, `${tag}: "Esc pause" inside the score card`);
+        // hits: wait for notes and press their keys until the song has scored
+        for (let k = 0; k < 120; k++) {
+          const due = await page.evaluate(() => { const d = GG.debug('gigui'); const st = d.stats; return st ? st.perfect + st.good : 0; });
+          if (due >= 3) break;
+          await page.keyboard.press(['Space', 'KeyD', 'KeyF', 'KeyS'][k % 4]); await page.waitForTimeout(60);
+        }
+        await page.waitForTimeout(250);
+        const b = await card();
+        const pts = b ? +b.n.replace(/,/g, '') : 0;
+        c.ok(b && pts > 0 && pts % 50 === 0 && /^×\d+$/.test(b.combo) && /^\d+% hit$/.test(b.acc), `${tag}: the score card updates (${b && b.n} / ${b && b.combo} / ${b && b.acc})`);
+        const same = await page.waitForFunction(() => { const st = GG.debug('gigui').stats, e = document.querySelector('[data-testid="gig-score"]'); if (!st || !e) return false;
+          return +e.querySelector('[data-testid="gig-score-n"]').textContent.replace(/,/g, '') === st.perfect * 100 + st.good * 50 && e.querySelector('[data-testid="gig-score-combo"]').textContent === '×' + st.combo; }, null, { timeout: 3000 }).then(() => true, () => false);
+        const st = await page.evaluate(() => GG.debug('gigui').stats);
+        c.ok(same, `${tag}: the card matches the session (100 a perfect, 50 a good; combo) ` + JSON.stringify(st));
+        await page.evaluate(() => GG.ui.closeAll());
+      } else {
+        await garage(page, { lanes: 4, seed: 5154 });
+        await startGig(page);
+        c.ok(!(await page.evaluate(() => document.querySelector('[data-testid="gig-score"]'))), `${tag}: no score card outside the PC layout`);
+        await page.evaluate(() => GG.ui.closeAll());
+      }
+      c.ok(!errors.length, `${tag}: no console errors ` + errors.slice(0, 3).join(' | '));
+    } catch (e) { c.ok(false, tag + ' threw: ' + String(e && e.stack || e).split('\n').slice(0, 3).join(' | ')); }
+    finally { await close(); }
+  }
+  c.done();
+}
+
 (async () => {
   if (want('layout')) await layout();
   if (want('gig')) await gig();
   if (want('switch')) await switchSection();
   if (want('perf')) await perf();
   if (want('pref')) await pref();
+  if (want('polish')) await polish();
 })();
