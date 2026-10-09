@@ -518,7 +518,7 @@
       box.userData.action = H.action; scene.add(box); box.updateMatrixWorld();
       var lab = ctx.makeLabel(H.label, { px: H.px || 20, stroke: H.stroke, dot: H.dot });
       lab.position.set(H.at[0], H.at[1], H.at[2]); lab.userData.action = H.action; scene.add(lab);
-      hs[H.action] = { def: H, box: box, label: lab, y: H.at[1], i: hi, fade: 1 };
+      hs[H.action] = { def: H, box: box, label: lab, y: H.at[1], i: hi, fade: 1, oy: 0, og: 0 };
       hsList.push(hs[H.action]);
       labels.push(lab); hotspotActions.push(H.action);
     }
@@ -990,8 +990,9 @@
         h.fade += ((here && h.def.action !== 'shop' ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));   // (v1.3.1: the Gear shop never fades)
         h.label.material.opacity = h.fade;
         ctx.scaleLabel(h.label, big * (1 + 0.035 * Math.sin(t * 2.4 + k)));
-        h.label.position.y = h.y + 0.025 * Math.sin(t * 1.7 + k);
+        h.label.position.y = h.y + h.oy + 0.025 * Math.sin(t * 1.7 + k);
       }
+      unclash(dt);
       // Bulb: slow swing and a tired-bulb flicker now and then (v0.8 polish: the space sets the light: the jam room's tube buzzes).
       bulbPivot.rotation.z = 0.035 * Math.sin(t * 0.9); bulbPivot.rotation.x = 0.02 * Math.sin(t * 0.7 + 1);
       var fl = space.flicker(t);
@@ -1035,8 +1036,39 @@
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
     // A label is a constant-pixel sprite: userData.px tall (the pill is 58 / 64 of it), px * aspect wide, centred on its position.
+    // v1.5.1 (computer only, GG.input.desk): labels that would touch on screen (Drum kit / Gear shop at 1280x720 with the
+    // planner open) are nudged apart vertically: a few relaxation passes on their resting screen rects (+ 6 px across, 4 px
+    // down for the breathing), turned into a world-y offset (h.oy) eased in. A phone never runs it (oy stays 0).
+    var ucBox = [], ucT = 1;
+    function unclash(dt) {
+      if (!(GG.input && GG.input.desk && GG.input.desk()) || !R.worldToScreen) { for (var z = 0; z < hsList.length; z++) hsList[z].oy = hsList[z].og = 0; return; }
+      var n = hsList.length, i, j, b, c, k = 1 - Math.exp(-10 * dt);
+      for (i = 0; i < n; i++) { var hh = hsList[i], g = hh.og || 0; hh.oy = Math.abs(g - hh.oy) < 1e-4 ? g : hh.oy + (g - hh.oy) * k; }
+      if ((ucT += dt) < 0.1) return;   // (the goals ten times a second)
+      ucT = 0;
+      for (i = 0; i < n; i++) {
+        var h = hsList[i], p = h.label.position, u = h.label.userData, s0 = R.worldToScreen(p.x, h.y, p.z), s1 = s0 && R.worldToScreen(p.x, h.y + 1, p.z);
+        if (!s0 || !s1) return;
+        b = ucBox[i] || (ucBox[i] = {});
+        b.x = s0.x; b.y = s0.y; b.d = 0; b.ppu = Math.max(1, s0.y - s1.y);
+        var m = player.pending === h.def.action ? 1.12 : 1.04; b.w = u.px * u.aspect * m; b.h = u.px * 58 / 64 * m;
+      }
+      for (var it = 0; it < 8; it++) {
+        var moved = false;
+        for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) {
+          b = ucBox[i]; c = ucBox[j];
+          if (Math.abs(b.x - c.x) >= (b.w + c.w) / 2 + 6) continue;
+          var dy = (c.y + c.d) - (b.y + b.d), need = (b.h + c.h) / 2 + 4 - Math.abs(dy);
+          if (need <= 0) continue;
+          var up = dy > 0 || (dy === 0 && i < j) ? b : c, dn = up === b ? c : b;
+          up.d -= need / 2; dn.d += need / 2; moved = true;
+        }
+        if (!moved) break;
+      }
+      for (i = 0; i < n; i++) hsList[i].og = -ucBox[i].d / ucBox[i].ppu;
+    }
     function labelBox(h) {
-      var p = h.label.position, s = R.worldToScreen ? R.worldToScreen(p.x, h.y, p.z) : null, u = h.label.userData;
+      var p = h.label.position, s = R.worldToScreen ? R.worldToScreen(p.x, h.y + h.oy, p.z) : null, u = h.label.userData;
       return { action: h.def.action, x: s ? Math.round(s.x) : null, y: s ? Math.round(s.y) : null, w: Math.round(u.px * u.aspect), h: Math.round(u.px * 58 / 64) };
     }
 
