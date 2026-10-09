@@ -548,6 +548,46 @@
   C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
 
+  // ======================================================================
+  //  V1.6 SHOWTIME (status.md Addendum 9, owner popup 2026-10-09, all four picks + "Less motion"; report plan/v16_report.md;
+  // SAVE_SCHEMA stays 10: no career key, save codes + HoF backups unchanged; one new setting)
+  // Law: visuals only. Timing, judgement, scoring, grades, pay, the chart, audio scheduling and input are untouched; a note's y
+  // is yOf(t) as before (pulses scale brightness / size around a gem's centre), the hit line stays at hitY. Every effect is
+  // drawn under the gems (glows in their own pass before any gem); the judgement pop + combo text stay on top. Particles live
+  // <= 300 ms in a fixed pool of 96. The 3D stage and the DOM layout do not change (one new Settings row).
+  // Setting (global gg.v1.settings): lessMotion  GG.save DEFAULT_SETTINGS null = follow the OS; GG.prefs.normalize -> a
+  //   boolean: a stored true / false wins, else P.osLessMotion() = matchMedia('(prefers-reduced-motion: reduce)').matches
+  //   (node / no matchMedia / a throw -> false). Settings > Look + feel "Less motion" (set-lessMotion), right after Reduced
+  //   flashing: "A calm gig highway: no sparks, flames or scrolling. Good for older phones."
+  // GG.gigfx (55f_ui_gigfx.js; pure parts node-safe, tests/fx.test.js):
+  //   TIERS [10, 25, 50] ; tierOf(combo) -> 0..3 (combo = the session's combo, G.ses.combo = ses.stats().combo) ; HEAT [null,
+  //   amber, orange, white-hot] (zone + flames) ; TEXT [white, amber, orange, star cyan] (the combo counter) ; STAR ; POOL 96 ;
+  //   LIFE 300 ; MISS_MS 320 ; levelFor({ force, lessMotion, quality, gov }) -> { level 'full'|'calm', why 'force'|'pref'|'low'|
+  //   'gov'|null } ; pulse(t, spb) -> 0..1 ((1 - beat phase)^4: 1 on the chart's beat, t = the draw's song time) ;
+  //   missAlpha(ms, soft) -> the red hit line (a 45 ms on / dim flicker; soft = 0.32 x a fade, never back up) ; force null |
+  //   'full' | 'calm' (tests, owner shots) ; state (the live S: level, why, tier, pulse, flames, texture, shine, missA, ...).
+  //   Runtime (55 only): setup(geo) (glow / flash / beam sprites per lane colour + gem size, flame sprites per tier, the 48x96
+  //   texture tile, strip / star / miss gradients + the pattern; cached by key: builds count) ; reset() (each count-in) ;
+  //   judge(li, kind, p) ('gig:judge'; full: Perfect 10 sparks + flash + white ring, Good / fill 6 sparks + ring, miss 4 grey
+  //   shards; any level: the miss line) ; frame(level, t, p, combo, spb, soft) ; back(x) (full: texture scrolled at the
+  //   highway's speed, strip glow by combo, x50 star sweep + rails, lane edges on the beat) ; zone(x) (tier tint, calm too) ;
+  //   beat(y) ; mid(x) (full: lane flames from the zone's top edge, Perfect flash + beam, sparks, shockwave ellipses; then the
+  //   hit line in the combo colour and the miss line) ; glow / glint / shimmer ; comboColor() ; comboScale(p) (the tier pop) ;
+  //   cost(ms) / costReset().
+  // 55_ui_gig: G.geo (fxSetup at layout), fxCheck(p, fresh) every 500 ms + each count-in: calm when Less motion, graphics Low
+  //   (R.prefs().quality) or the governor stepped down ('auto' and R.perfState().autoRatio below R.RATIO_STEPS[0], or a lower
+  //   want; latched in G.fxGov until the next count-in); GG.gigfx.force pins it. G.fxLM / G.fxRF (readPrefs +
+  //   'settings:changed'). Calm = the 1.5 highway + the combo colour (counter, zone tint, hit line) + a soft miss tint.
+  //   reducedFlash (full): no Perfect beam, a smaller flash, no tier-up rings / counter pop, the soft miss tint, a still strip.
+  // Test hook: GG.ui.gigLiveBot = null | { accuracy, jitterMs, until? }: a seeded bot (RNG hashSeed(seed|livebot|song index);
+  //   botPlay's plan) plays each song in real time; taps + ses.tick on a fixed 50 ms song-time grid (judgements and scores do
+  //   not depend on frames); until = song time where botPlay finishes the song at once (seed |autoplay|); songs follow on.
+  // Debug: gigfx { level, why, force, lessMotion, reducedFlash, tier, combo, pulse, particles { cap, live, spawned, peak },
+  //   perfects, hits, misses, missA, missSoft, flames, texture, shine, sprites, builds, drawMs { n, p50, p95, max }, frames }.
+  // Tests: tests/fx.test.js, tests/pw_fx.js (fx, tiers, calm, os, flash, same, perf); tools/perf.js gig FX=full|calm;
+  //   tools/fx_look.js (owner stills + clips); tests/_pw.js open({ reducedMotion, video }); tests/_load.js opts.globals.
+  // ======================================================================
+
   /* ======================================================================
    V1.5 DESKTOP (plan/plan_contract_1.5.md §4; status.md Addendum 8, owner K1-K4 + Q1-Q3; SAVE_SCHEMA stays 10: no career key,
    save codes + HoF backups unchanged; three optional settings, defaulted in GG.prefs.normalize only, never written until changed)

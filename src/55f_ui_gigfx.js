@@ -61,7 +61,7 @@
   var P = { x: new Float32Array(N), y: new Float32Array(N), vx: new Float32Array(N), vy: new Float32Array(N), t0: new Float64Array(N),
     life: new Float32Array(N), size: new Float32Array(N), col: new Int8Array(N), next: 0, spawned: 0, peak: 0 };
   var S = { level: 'calm', why: null, soft: false, t: 0, p: 0, combo: 0, tier: 0, pulse: 0, spb: 0.5, tierAt: -1e9, lastTier: 0,
-    flash: new Float64Array(6), ring: new Float64Array(6), pring: new Float64Array(6), missAt: -1e9, missA: 0, flames: 0, texture: false, shine: false,
+    flash: new Float64Array(6), ring: new Float64Array(6), pring: new Float64Array(6), crack: new Float64Array(6), missAt: -1e9, missA: 0, flames: 0, texture: false, shine: false,
     perfects: 0, hits: 0, misses: 0, frames: 0, seed: 1 };
   var geo = null, spr = { glow: [], flash: [], beam: [], flame: [null, null, null, null], tile: null, key: '' }, builds = 0, nSprites = 0;
   var grad = { strip: [null, null, null, null], star: null, miss: null, pat: null, ctx: null };
@@ -120,8 +120,9 @@
     var w = 48, h = 96, c = canvas(w * d, h * d), x = c.getContext('2d'), s = 7;
     function r() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
     x.setTransform(d, 0, 0, d, 0, 0);
-    for (var i = 0; i < 14; i++) { x.globalAlpha = 0.35 + 0.5 * r(); x.fillStyle = '#ffffff'; x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 1, 6 + Math.floor(r() * 18)); }
-    for (i = 0; i < 26; i++) { x.globalAlpha = 0.25 + 0.5 * r(); x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 1.5, 1.5); }
+    x.fillStyle = '#ffffff';
+    for (var i = 0; i < 16; i++) { x.globalAlpha = 0.3 + 0.5 * r(); x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 3 + Math.floor(r() * 9), 1); }
+    for (i = 0; i < 30; i++) { x.globalAlpha = 0.25 + 0.5 * r(); x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 1.5, 1.5); }
     return c;
   }
   FX.setup = function (g) {
@@ -156,7 +157,7 @@
   };
   FX.reset = function () {
     P.next = 0; for (var i = 0; i < N; i++) P.life[i] = 0;
-    for (var l = 0; l < 6; l++) { S.flash[l] = -1e9; S.ring[l] = -1e9; S.pring[l] = -1e9; }
+    for (var l = 0; l < 6; l++) { S.flash[l] = -1e9; S.ring[l] = -1e9; S.pring[l] = -1e9; S.crack[l] = -1e9; }
     S.missAt = -1e9; S.tierAt = -1e9; S.lastTier = 0; S.seed = 1;
   };
   FX.reset();
@@ -184,7 +185,7 @@
     var cx = (geo.cols[li] + 0.5) * geo.laneW, cy = geo.hitY;
     if (kind === 'perfect') { S.flash[li] = p; S.pring[li] = p; S.ring[li] = p; spawn(li, cx, cy, 10, 130, 280, true, 200, 300, 3, -1); }
     else if (kind === 'good' || kind === 'fill') { S.ring[li] = p; spawn(li, cx, cy, 6, 90, 190, true, 160, 240, 2.5, li); }
-    else if (kind === 'miss') spawn(li, cx, cy + 4, 4, 30, 90, false, 220, 280, 3, -2);
+    else if (kind === 'miss') { S.crack[li] = p; spawn(li, cx, cy + 4, 5, 40, 110, false, 220, 290, 3, -2); }
   };
 
   /* ---- Per frame ---------------------------------------------------------------------------------------------- */
@@ -245,9 +246,9 @@
     var p = S.p, hy = g.hitY, lw = g.laneW, l, a, age;
     if (S.level === 'full') {
       x.globalCompositeOperation = 'lighter';
-      // lane flames lick up from the zone's top edge (x10 / x25 / x50: taller, hotter); the zone itself stays clear
+      // lane flames lick up from the zone's top edge (x10 / x25 / x50: taller, hotter); the zone (icons, names, keycaps) stays clear
       if (S.tier && spr.flame[S.tier]) {
-        var fs = spr.flame[S.tier], fh0 = [0, 18, 27, 36][S.tier], fw = Math.min(lw * 0.42, 32), fb = g.H - g.ZONE + 2;
+        var fs = spr.flame[S.tier], fh0 = [0, 22, 31, 40][S.tier], fw = Math.min(lw * 0.36, 28), fb = g.H - g.ZONE - 3;
         x.globalAlpha = [0, 0.5, 0.6, 0.7][S.tier];
         for (l = 0; l < g.lanes; l++) {
           var cx = (l + 0.5) * lw, ph = p * 0.011 + l * 1.7;
@@ -263,21 +264,26 @@
       for (l = 0; l < g.lanes && l < 6; l++) {
         age = p - S.flash[l];
         if (age >= 0 && age < 200 && spr.flash[l]) {
-          var c0 = (g.cols[l] + 0.5) * lw, e = 1 - age / 200, sz = Math.min(lw * (S.soft ? 1 : 1.35), 120) * (0.75 + 0.35 * (1 - e));
-          x.globalAlpha = (S.soft ? 0.4 : 0.7) * e; x.drawImage(spr.flash[l], c0 - sz / 2, hy - sz / 2, sz, sz);
-          if (!S.soft && spr.beam[l]) { x.globalAlpha = 0.5 * e; x.drawImage(spr.beam[l], c0 - lw * 0.45, hy - 130, lw * 0.9, 130); }
+          var c0 = (g.cols[l] + 0.5) * lw, e = 1 - age / 200, sz = Math.min(lw * (S.soft ? 1 : 1.6), 140) * (0.75 + 0.4 * (1 - e));
+          x.globalAlpha = (S.soft ? 0.4 : 0.9) * e; x.drawImage(spr.flash[l], c0 - sz / 2, hy - sz / 2, sz, sz);
+          if (!S.soft && spr.beam[l]) { x.globalAlpha = 0.7 * e; x.drawImage(spr.beam[l], c0 - lw * 0.45, hy - 150, lw * 0.9, 150); }
         }
       }
-      // sparks (lane colour + white), miss shards (grey); <= 300 ms each
-      for (var i = 0; i < N; i++) {
-        var lf = P.life[i]; if (!lf) continue;
-        age = p - P.t0[i];
-        if (age >= lf || age < 0) { if (age >= lf) P.life[i] = 0; continue; }
-        var s = age / 1000, k = 1 - age / lf, ci = P.col[i];
-        x.globalAlpha = k; x.fillStyle = ci === -1 ? '#ffffff' : ci === -2 ? '#8a90a3' : g.colors[ci] || '#ffffff';
-        var sz2 = P.size[i] * (0.4 + 0.6 * k);
-        x.fillRect(P.x[i] + P.vx[i] * s - sz2 / 2, P.y[i] + P.vy[i] * s + 450 * s * s - sz2 / 2, sz2, sz2);
+      // sparks (lane colour + white), miss shards (grey); <= 300 ms each; one fillStyle per colour group
+      var nl = 0;
+      for (var gi = -2; gi < g.lanes; gi++) {
+        var any = false;
+        for (var i = 0; i < N; i++) {
+          var lf = P.life[i]; if (!lf || P.col[i] !== gi) continue;
+          age = p - P.t0[i];
+          if (age >= lf || age < 0) { if (age >= lf) P.life[i] = 0; continue; }
+          if (!any) { any = true; x.fillStyle = gi === -1 ? '#ffffff' : gi === -2 ? '#8a90a3' : g.colors[gi] || '#ffffff'; }
+          var s = age / 1000, k = 1 - age / lf, sz2 = P.size[i] * (0.4 + 0.6 * k); nl++;
+          x.globalAlpha = k;
+          x.fillRect(P.x[i] + P.vx[i] * s - sz2 / 2, P.y[i] + P.vy[i] * s + 450 * s * s - sz2 / 2, sz2, sz2);
+        }
       }
+      if (nl > P.peak) P.peak = nl;
       x.globalCompositeOperation = 'source-over';
       x.lineWidth = 2;
       // shockwave rings: a flat ellipse on the lane floor (white for a Perfect)
@@ -292,6 +298,23 @@
           a = age / 220; x.globalAlpha = 0.7 * (1 - a); x.strokeStyle = '#ffffff';
           x.beginPath(); x.ellipse((g.cols[l] + 0.5) * lw, hy, 22 + 52 * a, 8 + 16 * a, 0, 0, 6.2832); x.stroke();
         }
+      }
+    }
+    // a miss cracks: the dead gem's two grey halves (lane-coloured rims) split at the hit line, tilt, sink a little and fade
+    if (S.level === 'full') {
+      var hw = g.gw / 2 - 2, gh2 = g.gh, rr2 = Math.max(1, gh2 / 2 - 1);
+      x.lineWidth = 1.5;
+      for (l = 0; l < g.lanes && l < 6; l++) {
+        age = p - S.crack[l];
+        if (!(age >= 0 && age < 300)) continue;
+        a = age / 300; var cx3 = (g.cols[l] + 0.5) * lw, dx = 2 + 14 * a, dy2 = 8 * a * a, rot = 0.4 * a, d = g.DPR;
+        x.globalAlpha = 0.9 * (1 - a); x.strokeStyle = g.colors[l]; x.fillStyle = '#59607a';
+        for (var sd = -1; sd <= 1; sd += 2) {
+          var co = Math.cos(rot * sd), si = Math.sin(rot * sd);
+          x.setTransform(d * co, d * si, -d * si, d * co, d * (cx3 + sd * (dx + hw / 2)), d * (hy + dy2));
+          rrPath(x, -hw / 2, -gh2 / 2, hw, gh2, rr2); x.fill(); x.stroke();
+        }
+        x.setTransform(d, 0, 0, d, 0, 0);
       }
     }
     // the hit line on top of it all, in the combo colour from x10 (calm too)
@@ -331,8 +354,8 @@
     for (var i = 0; i < 3; i++) {
       var f = S.t * sp - i / 3; f -= Math.floor(f);
       var yy = yTop + (yBot - yTop) * f;
-      x.globalAlpha = (held ? 0.5 : 0.32) * (0.5 + 0.5 * Math.sin(f * Math.PI));
-      x.fillRect(tx - w / 2 + 1, yy - 5, w - 2, 10);
+      x.globalAlpha = (held ? 0.7 : 0.45) * (0.4 + 0.6 * Math.sin(f * Math.PI));
+      x.fillRect(tx - w / 2, yy - 7, w, 14);
     }
     x.globalAlpha = ga;
   };

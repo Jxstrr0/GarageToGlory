@@ -1818,6 +1818,7 @@
         held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, cardAge: G.cardAt ? Math.round(performance.now() - G.cardAt) : null, restart: !!G.restart,
       off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
       offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
-      laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
+      laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw,
+      pop: G.popKind || null, fx: G.fxLevel || null };
   });
 })(window.GG);
