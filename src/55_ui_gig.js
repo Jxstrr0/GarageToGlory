@@ -65,6 +65,15 @@
 //   phone (the 3D stage, a hitch) can go 150+ ms between frames while the main thread is free; booking only on frames
 //   meant a late frame booked them in the past (GG.audio.hit plays a past time now = a late drum). Same pattern as the
 //   backing band's own look-ahead scheduler (30_audio: setInterval, not rAF), so the drums are as steady as the band.
+// v1.6 "Showtime" (Addendum 9): the highway animates through GG.gigfx (55f): draw() calls FX.frame / back / zone / beat /
+//   mid / glow / glint / shimmer at its layers (every effect under the gems), 'gig:judge' -> FX.judge, layout() -> FX.setup
+//   (G.geo). The level (fxCheck, every 500 ms + each count-in): calm when Less motion is on, graphics Low, or the frame
+//   governor stepped down (latched for the song: G.fxGov); GG.gigfx.force pins it. Calm = the v1.5 highway + the combo
+//   colour + a soft miss tint. Note y, the hit line, judgement and input are untouched. debug('gigfx').
+//   ui.gigLiveBot = null | { accuracy, jitterMs, until? } (tests, owner clips): a seeded bot plays each song IN REAL TIME on
+//   the highway (count-in, band audio, frames, fx); its taps (botPlay's plan: per note chance(accuracy), gauss x jitterMs)
+//   and the session's ticks run on a fixed 50 ms song-time grid, so its judgements + scores never depend on frame timing;
+//   at song time `until` the rest of the song finishes instantly (GG.gig.botPlay, as gigAutoplay); songs follow on.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06, PRE = 0.25, LAT_N = 9, COUNT_AHEAD = 0.1;
@@ -74,6 +83,8 @@
   }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
   var P = GG.prefs;   // v1.5: the key map + timing helpers (11_settings); the v1.4 KEYS table is P.CLASSIC_KEYS
+  // v1.6: the highway's animation layer (55f_ui_gigfx fills it in)
+  var FX = GG.gigfx = GG.gigfx || {};
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   // v0.9: every §4.4 genre moment and band action has a banner (content lines.moments[kind].label may rename one); an
@@ -281,7 +292,11 @@
       var li = laneIndex(p.lane);
       if (p.judgement && !p.auto) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
       if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now();
+      // v1.6: sparks, flashes, the miss line (visual only)
+      if (p.judgement && FX.judge) FX.judge(li, p.judgement, performance.now());
     },
+    // v1.6
+    'settings:changed': function () { if (G) { var pf = prefs(); G.fxLM = !!pf.lessMotion; G.fxRF = !!pf.reducedFlash; G.fxAt = -1e9; } },
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
     'crowd:moment': function (p) {
       if (!G || G.opts.studio) return;
@@ -365,6 +380,8 @@
     G.off = G.input === 'keys' ? G.offK : G.offT;
     G.visM = !!G.off.visM;   // v0.8.3: the light check ran for this profile (v1.5: for this input)
     G.pf = pf; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+    // v1.6
+    G.fxLM = !!pf.lessMotion; G.fxRF = !!pf.reducedFlash;
   }
   function startSession(ids) {
     readPrefs();
@@ -451,6 +468,9 @@
     book(G.t, p);   // the first hat goes out now
     if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
+    // v1.6: a new song: no sparks or flashes left over; the governor latch re-opens
+    if (FX.reset) FX.reset();
+    G.fxGov = false; fxCheck(p, true); G.bot = null;
     gigHint();   // v1.5
     loop();
   }
@@ -511,6 +531,51 @@
     if (r) G.scBase = (G.scBase || 0) + r.perfect * 100 + r.good * 50;   // v1.5.1: the score card's points so far
     G.mode = 'between';
     showBetween(r);
+    // v1.6: the live bot plays on
+    if (bot()) G.autoT = setTimeout(nextSong, 30);
+  }
+  // v1.6 (tests, owner clips): ui.gigLiveBot plays the song in real time on a fixed 50 ms song-time grid (taps + ticks as
+  // GG.gig.botPlay: the same plan, the same order), so frame timing (and the fx level) never changes a judgement or a score.
+  ui.gigLiveBot = ui.gigLiveBot || null;
+  function bot() { return !!(ui.gigLiveBot && !auto()); }
+  function liveBot(t, p) {
+    var o = ui.gigLiveBot, B = G.bot, ch = G.chart;
+    if (!B || B.chart !== ch) {
+      var rng = GG.RNG(GG.hashSeed(S().seed + '|livebot|' + G.ses.index)), acc = o.accuracy != null ? o.accuracy : 1, jit = (o.jitterMs || 0) / 1000, taps = [];
+      var gauss = function () { var u = Math.max(1e-9, rng.next()), v = rng.next(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+      ch.notes.forEach(function (n) {
+        if (n.j !== 0 || !rng.chance(acc)) return;
+        var at = Math.max(0, n.t + (jit ? U.clamp(gauss(), -3, 3) * jit : 0));
+        taps.push({ t: at, li: n.li });
+        if (n.chord) taps.push({ t: at, li: n.chord[1] });
+        if (n.hold) taps.push({ t: Math.max(at, n.t + n.len), li: n.li, up: true });
+      });
+      taps.sort(function (a, b) { return a.t - b.t; });
+      B = G.bot = { chart: ch, taps: taps, k: 0, i: 1, end: ch.duration + 0.4, done: false, n: 0 };
+    }
+    while (!B.done) {
+      var T = Math.min(B.i * 0.05, B.end);
+      if (T > t) break;
+      while (B.k < B.taps.length && B.taps[B.k].t <= T) {
+        var q = B.taps[B.k++];
+        if (q.up) G.ses.release(q.li, q.t); else { G.press[q.li] = p; G.lastTap = G.ses.judge(q.li, q.t); B.n++; }
+      }
+      G.ses.tick(T); B.i++;
+      if (o.until != null && T >= o.until) { B.done = true; botFinish(); return true; }
+      if (T >= B.end) B.done = true;
+    }
+    return false;
+  }
+  // the rest of this song at once (botPlay, as gigAutoplay), then the next one starts live again
+  function botFinish() {
+    var o = ui.gigLiveBot || {}, i = G.ses.index;
+    releaseAll(); setLive(false); stopAudio();
+    G.ses.emit = false;
+    var r = GG.gig.botPlay(G.ses, { accuracy: o.accuracy, jitterMs: o.jitterMs, one: true }, GG.RNG(GG.hashSeed(S().seed + '|autoplay|' + i)));
+    G.ses.emit = true;
+    stageCall('setCrowdLevel', G.ses.crowd);
+    G.mode = 'between'; showBetween(r);
+    G.autoT = setTimeout(nextSong, 30);
   }
   function playAuto() {
     stopAudio();
@@ -775,7 +840,8 @@
         }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
-      if (t >= 0) G.ses.tick(t);   // v0.6.1 Auto-kick judges here; v0.8.3: its kicks are booked (autoKicks)
+      // v0.6.1 Auto-kick judges here; v0.8.3: its kicks are booked (autoKicks); v1.6 the live bot
+      if (t >= 0) { if (bot()) { if (liveBot(t, p)) return; } else G.ses.tick(t); }
       book(t, p);   // auto notes + second kicks (the pump books them between frames)
       if (G.mode === 'play' && t - G.D >= ch.duration + 0.5) { endSong(); }
     }
@@ -1070,9 +1136,45 @@
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
     G.gemH = U.clamp(Math.round(speed * gap * 0.7), 8, 16);
     buildBg();
+    // v1.6
+    fxSetup();
     G.fonts = { pop: '900 26px ' + FONT, combo: '900 22px ' + FONT, small: '800 10px ' + FONT, band: '800 11px ' + FONT, icon: '20px ' + FONT, dbl: '900 11px ' + FONT };
   }
   var FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+  // v1.6: the highway's geometry for GG.gigfx (one object per gig, refilled at each layout; sprites rebuild only on a change)
+  function gemW() { return G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70); }
+  function fxSetup() {
+    if (!FX.setup || !G.x) return;
+    var g = G.geo || (G.geo = { colors: [], cols: [] });
+    g.ctx = G.x; g.W = W; g.H = H; g.DPR = DPR; g.laneW = laneW; g.hitY = hitY; g.speed = speed; g.lanes = G.lanes; g.ZONE = ZONE;
+    g.gw = gemW(); g.gh = G.gemH; g.wide = !!G.wideHw;
+    g.colors.length = 0; g.cols.length = 0;
+    for (var l = 0; l < G.lanes; l++) { g.colors.push(laneColor(l)); g.cols.push(col(l)); }
+    FX.setup(g);
+  }
+  // v1.6: the fx level, every 500 ms (+ fresh at each count-in): Less motion, graphics Low or the governor stepping down
+  // (its want / its 'auto' ratio below the top step; latched for the song) -> calm. Never reads storage per frame (G.fxLM /
+  // G.fxRF come from readPrefs + 'settings:changed').
+  function fxCheck(p, fresh) {
+    if (!FX.levelFor) { G.fxLevel = 'calm'; return; }
+    if (!fresh && p - (G.fxAt || 0) < 500) return;
+    G.fxAt = p;
+    var R = GG.render, q = null, gov = false;
+    try {
+      var rp = R && R.prefs ? R.prefs() : null;
+      if (rp) {
+        q = rp.quality;
+        if (rp.auto && R.available && R.perfState) {
+          var ps = R.perfState(), top = R.RATIO_STEPS ? R.RATIO_STEPS[0] : 1.5;
+          gov = ps.autoRatio < top - 1e-6 || (ps.want != null && ps.want < ps.autoRatio - 1e-6);
+        }
+      }
+    } catch (e) { /* no 3D: no governor */ }
+    if (gov) G.fxGov = true;
+    var d = FX.levelFor({ force: FX.force, lessMotion: G.fxLM, quality: q, gov: !!G.fxGov });
+    G.fxLevel = d.level;
+    if (FX.state) { FX.state.why = d.why; FX.state.lessMotion = !!G.fxLM; }
+  }
   function rr(x, px, py, w, h, r) {
     x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r);
     x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath();
@@ -1122,9 +1224,15 @@
   }
   function yOf(nt, t) { return hitY - (nt - t) * speed; }
   function draw(t, p) {
+    // v1.6: the highway's own draw time (debug('gigfx').drawMs)
+    var t0 = performance.now();
     var x = G.x, ch = G.chart, n = ch.notes, k, l, a, y;
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
+    fxCheck(p, false);
+    // v1.6 (session combo = stats().combo)
+    var fx = !!FX.frame, full = fx && G.fxLevel === 'full', combo = G.ses.combo;
+    if (fx) { FX.frame(G.fxLevel || 'calm', t, p, combo, ch.spb, G.fxRF); FX.back(x); FX.zone(x); }
     for (l = 0; l < G.lanes; l++) {   // tap flashes (v0.7.2: the kick zone flashes again when a double's second kick lands)
       a = 1 - (p - G.press[l]) / 140;
       if (l === KICK) a = Math.max(a, 1 - (p - G.k2Last) / 140);
@@ -1132,15 +1240,21 @@
     }
     x.globalAlpha = 1;
     var spb = ch.spb, b0 = Math.max(0, Math.ceil((t - 0.3) / spb)), b1 = Math.floor((t + LOOK) / spb);
-    for (var b = b0; b <= b1; b++) {   // beat + bar lines
+    // beat + bar lines (v1.6: brighter on the beat and as they cross the hit line)
+    for (var b = b0; b <= b1; b++) {
       y = yOf(b * spb, t); if (y > hitY) continue;
-      x.fillStyle = b % 4 === 0 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.07)'; x.fillRect(0, y, W, b % 4 === 0 ? 2 : 1);
+      if (full) { x.globalAlpha = Math.min(1, (b % 4 === 0 ? 0.2 : 0.07) + FX.beat(y)); x.fillStyle = '#ffffff'; }
+      else x.fillStyle = b % 4 === 0 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.07)';
+      x.fillRect(0, y, W, b % 4 === 0 ? 2 : 1);
     }
+    x.globalAlpha = 1;
     for (k = 0; k < ch.fills.length; k++) band(x, ch.fills[k], t, 'rgba(185,140,255,.13)', '#c9a4ff', ch.fills[k].shred ? 'SHRED · GO WILD' : 'FREESTYLE · GO WILD');
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', G.seat === 'lead' ? 'SOLO · YOUR SPOTLIGHT' : 'SOLO · KEEP IT SIMPLE');
+    // v1.6: flames, Perfect flashes, shockwaves, sparks, the miss line: all under the gems
+    if (fx) FX.mid(x);
     if (G.seat !== 'drums') drawHeld(x, t);   // v1.1: the tails of the notes you are holding
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    var gw = gemW(), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
     x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
     for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
       var an = au[k]; if (an.t > t + LOOK + 0.05) break;
@@ -1149,6 +1263,17 @@
       rr(x, col(an.li) * laneW + (laneW - gw) / 2 + 4, yOf(an.t, t) - gh / 2 + 3, gw - 8, gh - 6, gr - 3); x.stroke();
     }
     x.setLineDash(G.noDash); x.globalAlpha = 1;
+    // v1.6: gems pulse around their centre
+    var pu = full && FX.state ? FX.state.pulse : 0, dw = gw * 0.06 * pu, dh = gh * 0.1 * pu;
+    // v1.6: every glow first, so no halo ever lands on a gem
+    if (full) for (k = G.drawFrom; k < n.length; k++) {
+      var gn = n[k]; if (gn.t > t + LOOK + 0.05) break;
+      if (gn.j !== 0 || gn.free || gn.li >= G.lanes || t - gn.t > 0.35) continue;
+      y = yOf(gn.t, t);
+      FX.glow(x, gn.li, col(gn.li) * laneW + (laneW - gw) / 2, y, gw, gh, 1);
+      if (gn.chord && gn.chord[1] < G.lanes) FX.glow(x, gn.chord[1], col(gn.chord[1]) * laneW + (laneW - gw) / 2, y, gw, gh, 1);
+    }
+    x.globalAlpha = 1;
     for (k = G.drawFrom; k < n.length; k++) {
       var nt = n[k], past = t - nt.t;
       if (nt.t > t + LOOK + 0.05) break;
@@ -1163,7 +1288,16 @@
         x.globalAlpha = 0.8 * a; x.fillStyle = '#ffffff'; x.fillRect(Math.min(gx, cx2) + gw / 2, y - 2, Math.abs(cx2 - gx), 4);
         x.globalAlpha = (nt.cl && nt.cl.indexOf(nt.chord[1]) >= 0 ? 0.35 : 1) * a; x.fillStyle = laneColor(nt.chord[1]); rr(x, cx2, y - gh / 2, gw, gh, gr); x.fill();
       }
-      if (nt.j === 3) { x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063'; }
+      if (nt.j === 3) {
+        // v1.6: a missed gem cracks in two and the halves drift apart as it fades (its y never moves)
+        if (full) {
+          var sp = 1 + 9 * (1 - a), hw2 = gw / 2 - 1;
+          x.globalAlpha = 0.55 * a; x.fillStyle = '#4a5063';
+          rr(x, gx - sp, y - gh / 2, hw2, gh, gr); x.fill(); rr(x, gx + gw / 2 + 1 + sp, y - gh / 2, hw2, gh, gr); x.fill();
+          continue;
+        }
+        x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063';
+      }
       else if (nt.free) { x.globalAlpha = 0.3 * a; x.fillStyle = laneColor(nt.li); }
       else { x.globalAlpha = 1; x.fillStyle = laneColor(nt.li); }
       var dy = 0;
@@ -1172,8 +1306,11 @@
         x.globalAlpha = ga * 0.6; rr(x, gx + 4, y - gh / 2 - dy, gw - 8, gh, gr); x.fill(); x.globalAlpha = ga;
         x.lineWidth = 2; x.strokeStyle = '#0a0e18'; rr(x, gx, y - gh / 2, gw, gh, gr); x.stroke();
       }
-      rr(x, gx, y - gh / 2, gw, gh, gr); x.fill();
-      if (nt.j === 0 && !nt.free) { x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(gx + 7, y - gh / 2 + 3, gw - 14, 2); }
+      // (centre unchanged)
+      if (pu && nt.j === 0 && !nt.free) rr(x, gx - dw / 2, y - (gh + dh) / 2, gw + dw, gh + dh, gr + dh / 2);
+      else rr(x, gx, y - gh / 2, gw, gh, gr);
+      x.fill();
+      if (nt.j === 0 && !nt.free) { x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(gx + 7, y - gh / 2 + 3, gw - 14, 2); if (full) FX.glint(x, k, gx, y, gw, gh, gr, a); }
       if (nt.extra) { x.globalAlpha = 1; x.lineWidth = 2; x.strokeStyle = '#ffffff'; x.stroke(); }
       if (dy && nt.j === 0) {
         var bx = gx + gw - 12, by = y - gh / 2 - dy / 2;
@@ -1186,7 +1323,8 @@
       a = G.autoAt ? 1 - (p - G.autoAt[l]) / 180 : 0;
       if (a > 0 && a <= 1) { x.globalAlpha = a * 0.6; x.strokeStyle = laneColor(l); x.lineWidth = 2; x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 10 + (1 - a) * 10, 0, 6.2832); x.stroke(); }
     }
-    for (l = 0; l < G.lanes; l++) {   // hit bursts
+    // hit bursts (the simple hit pop; calm keeps it)
+    for (l = 0; l < G.lanes; l++) {
       a = 1 - (p - G.burst[l]) / 220;
       if (a > 0) {
         x.globalAlpha = a; x.strokeStyle = laneColor(l); x.lineWidth = 3;
@@ -1203,14 +1341,18 @@
       x.fillText(POP_TEXT[G.popKind], U.clamp(col(G.popLane) * laneW + laneW / 2, 70, W - 70), hitY - 58 - (1 - a) * 14);
     }
     x.globalAlpha = 1;
-    var combo = G.ses.combo;
     if (combo !== G.comboN) { G.comboN = combo; G.comboStr = combo >= 5 ? '×' + combo : ''; }
     if (G.comboStr) {
-      x.textAlign = 'left'; x.textBaseline = 'top'; x.fillStyle = '#ffffff'; x.font = G.fonts.combo; x.fillText(G.comboStr, 10, 10);
+      // v1.6: the counter in the combo colour, popping at x10 / x25 / x50
+      var cs = fx && !G.fxRF ? FX.comboScale(p) : 1;
+      if (cs !== 1) x.setTransform(DPR * cs, 0, 0, DPR * cs, DPR * 10 * (1 - cs), DPR * 10 * (1 - cs));
+      x.textAlign = 'left'; x.textBaseline = 'top'; x.fillStyle = fx ? FX.comboColor() : '#ffffff'; x.font = G.fonts.combo; x.fillText(G.comboStr, 10, 10);
+      if (cs !== 1) x.setTransform(DPR, 0, 0, DPR, 0, 0);
       x.font = G.fonts.small; x.fillStyle = 'rgba(255,255,255,.6)'; x.fillText('COMBO', 12, 36);
     }
     x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(0, 0, W, 3);   // song progress
     x.fillStyle = '#ffb347'; x.fillRect(0, 0, W * U.clamp(t / ch.duration, 0, 1), 3);
+    if (FX.cost) FX.cost(performance.now() - t0);
   }
   // v1.1: a hold's tail from its head (y) up to its end; ticks mark a run's notes. Held notes draw from the hit line.
   function tail(x, n, li, t, y, alpha) {
@@ -1219,6 +1361,8 @@
     G.tailN = (G.tailN || 0) + 1;
     x.globalAlpha = alpha; x.fillStyle = laneColor(li);
     x.fillRect(tx - w / 2, Math.max(0, y1), w, y - Math.max(0, y1));
+    // v1.6: light runs down the tail
+    if (G.fxLevel === 'full' && FX.shimmer) FX.shimmer(x, tx, w, Math.max(0, y1), y, alpha > 0.8);
     if (n.run && n.seq) {
       x.fillStyle = '#ffffff';
       for (var q = 0; q < n.seq.length; q++) { var yy = yOf(n.t + n.seq[q][0], t); if (yy < y && yy > 0) x.fillRect(tx - w, yy - 1, w * 2, 2); }

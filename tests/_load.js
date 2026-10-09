@@ -23,6 +23,7 @@ function load(opts) {
   opts = opts || {};
   const ctx = { console, Math, JSON, Date, Object, Array, String, Number, Boolean, Error, Map, Set, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, TextEncoder, TextDecoder, Uint8Array, Uint16Array, Uint32Array };
   if (opts.localStorage !== undefined) ctx.localStorage = opts.localStorage;
+  if (opts.globals) Object.assign(ctx, opts.globals);   // v1.6: e.g. { matchMedia } (fx.test: the OS's reduced motion)
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   for (const f of ORDER.filter(f => SIM_SAFE.test(f))) {
