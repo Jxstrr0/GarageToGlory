@@ -382,6 +382,8 @@ async function polish() {
         const lb0 = await page.evaluate(() => GG.debug('render').labelBox || []);
         c.ok(lb0.length >= 8 && !overlaps(lb0).length, `${tag} ${seat || 'drums'} garage: no label overlaps ` + overlaps(lb0).join(' | '));
         await page.evaluate(() => GG.ui.openPlanner()); await waitScreen(page, 'plan'); await page.waitForTimeout(500); await settle3d(page);
+        // (the nudge eases in over a few frames; a loaded machine draws few: give it up to 5 s)
+        await page.waitForFunction(src => !(new Function('return ' + src)())(GG.debug('render').labelBox || []).length, overlaps.toString(), { timeout: 5000 }).catch(() => {});
         const lb = await page.evaluate(() => GG.debug('render').labelBox || []);
         const kit = lb.find(b => b.action === 'kit'), shop = lb.find(b => b.action === 'shop');
         c.ok(lb.length >= 8 && !overlaps(lb).length, `${tag} ${seat || 'drums'} planner open: no label overlaps ` + overlaps(lb).join(' | '));
@@ -434,12 +436,22 @@ async function polish() {
         c.ok(a && a.shown && a.l >= a.hwR + 10 && a.r <= a.W && a.t > a.hwT && a.b < a.hwB, `${tag}: the score card right of the highway ` + JSON.stringify(a));
         c.ok(a && a.hint, `${tag}: "Esc pause" inside the score card`);
         // hits: wait for notes and press their keys until the song has scored
-        for (let k = 0; k < 120; k++) {
-          const due = await page.evaluate(() => { const d = GG.debug('gigui'); const st = d.stats; return st ? st.perfect + st.good : 0; });
-          if (due >= 3) break;
-          await page.keyboard.press(['Space', 'KeyD', 'KeyF', 'KeyS'][k % 4]); await page.waitForTimeout(60);
-        }
-        await page.waitForTimeout(250);
+        // (in the page, on each next note's time: all four drum keys down + up (synthetic, exact timing; the other lanes are strays,
+        // which never break a combo) until three notes are hit; a busy machine can't miss the windows this way)
+        await page.evaluate(async () => {
+          const K = [['Space', ' '], ['KeyD', 'd'], ['KeyF', 'f'], ['KeyS', 's']], t0 = performance.now();
+          const ev = (type, k) => window.dispatchEvent(new KeyboardEvent(type, { code: k[0], key: k[1], bubbles: true, cancelable: true }));
+          while (performance.now() - t0 < 15000) {
+            const d = GG.debug('gigui'), st = d.stats; if (st && st.perfect + st.good >= 3) return;
+            const n = (d.soon || []).find(m => m.t > d.songT + 0.05); if (!n) { await new Promise(r => setTimeout(r, 20)); continue; }
+            while (GG.debug('gigui').songT < n.t - 0.012) await new Promise(r => setTimeout(r, 4));
+            while (GG.debug('gigui').songT < n.t) { /* spin */ }
+            K.forEach(k => ev('keydown', k)); K.forEach(k => ev('keyup', k));
+            await new Promise(r => setTimeout(r, 30));
+          }
+        });
+        // (the card redraws on the highway's frame: a loaded software-GL machine can take a while)
+        await page.waitForFunction(() => { const e = document.querySelector('[data-testid="gig-score-n"]'); return e && e.textContent !== '0'; }, null, { timeout: 5000 }).catch(() => {});
         const b = await card();
         const pts = b ? +b.n.replace(/,/g, '') : 0;
         c.ok(b && pts > 0 && pts % 50 === 0 && /^×\d+$/.test(b.combo) && /^\d+% hit$/.test(b.acc), `${tag}: the score card updates (${b && b.n} / ${b && b.combo} / ${b && b.acc})`);
