@@ -262,6 +262,8 @@
     + ' padding: 0 4px; border-radius: 5px; background: var(--panel2); border: 1px solid var(--line); color: var(--amber); font-size: 12px; }\n'
     + 'html.gg-wide .kb-hints { order: 99; flex: 0 0 auto; width: 100%; margin: 0; color: var(--faint); font: 600 12px/1.4 var(--font); text-align: center;'
     + ' letter-spacing: .02em; pointer-events: none; }\n'
+    + 'html.gg-wide .kb-hints .kbh { display: inline-block; margin: 2px 14px 2px 0; white-space: nowrap; }\n'
+    + 'html.gg-wide .kb-hints .kbh:last-child { margin-right: 0; } html.gg-wide .kb-hints .kcap { min-width: 1.7em; margin-right: 3px; padding: 0 5px; color: var(--dim); font-size: 11px; }\n'
     + 'html.gg-wide .sheet-foot:has(> .kb-hints), html.gg-wide .modal-foot:has(> .kb-hints), html.gg-wide .full-foot:has(> .kb-hints) { flex-wrap: wrap; }\n'
     + 'html.gg-wide.gg-keys [data-testid="btn-close"], html.gg-wide.gg-keys [data-testid="btn-back"] { position: relative; }\n'
     + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after, html.gg-wide.gg-keys [data-testid="btn-back"]::after { content: "Esc"; position: absolute;'

@@ -20,12 +20,15 @@
 //   rebind     Settings > Keys: bind, swap, Tab / Enter / F5 refused (the chip keeps waiting), Esc cancels, reset, a reload
 //              keeps it, the gig uses it (+ keycap); a rebind started with Enter shows no "Enter is for menus".
 //   calib-keys both key steps write calibKb (touch calib untouched); a key held 1 s = one tap; light check only keeps the
-//              touch audio (fallback).
+//              touch audio (fallback). v1.5.1 (PC layout): progress dots follow clicks + taps, all 8 filled, the docked
+//              panel fitted under the pad.
 //   phone      390x844 phone context: no Keys section, Layout row, calib input seg, gig-keys, gig-pause-keys, keycaps; no
-//              v1.5-only class (.kcap .gig-keys .gig-hint .set-key-chip .kb-spots ...) in the DOM.
+//              v1.5-only class (.kcap .gig-keys .gig-hint .set-key-chip .kb-spots ...; v1.5.1 .gig-score .calib-dots .kbh
+//              .set-rail, also during the calibration's tap test) in the DOM.
 //   wide-gig   the PC layout's highway at 1280x720 / 1440x900 / 1920x1080, 4 and 6 lanes: data-lanes, laneW = width / lanes,
 //              wide gems, note travel time == the phone's, the stage frame to 0.1 of the highway, B bounds (when 5w is in
-//              the tree); a resize 1440 -> 800 while paused re-lays it out (laneW right after resume).
+//              the tree), v1.5.1 the score card holding "Esc pause"; a resize 1440 -> 800 while paused re-lays it out (laneW
+//              right after resume, no score card).
 // Run: node build.js && META_ONLY=keys timeout 500 node tests/pw_keys.js
 const { open, checker } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -633,6 +636,11 @@ async function calibKeys() {
         continue;
       }
       await pressOn(clicks[i], 30);
+      if (i === 4) {   // v1.5.1: the progress dots (PC layout): 5 clicks come, 4 taps caught (the held key was one)
+        await page.waitForTimeout(30);
+        const dt = await page.evaluate(() => { const d = document.querySelector('[data-testid="calib-dots"]'); return d ? { n: d.children.length, on: d.querySelectorAll('.on').length, tap: d.querySelectorAll('.tap').length, wide: document.documentElement.classList.contains('gg-wide') } : { wide: document.documentElement.classList.contains('gg-wide') }; });
+        c.ok(dt.wide ? dt.n === clicks.length && dt.on === 5 && dt.tap === 4 : dt.n == null, 'progress dots ' + (dt.wide ? 'follow the clicks + taps ' : 'only in the PC layout ') + JSON.stringify(dt));
+      }
     }
     await page.waitForFunction(() => GG.debug('calib').step === 'audioDone', null, { timeout: 5000 });
     const au = await dbg(page, 'calib');
@@ -643,6 +651,13 @@ async function calibKeys() {
       await page.waitForFunction(n => GG.debug('calib').clicks.filter(x => x != null).length > n, i, { timeout: 3000 });
       await page.waitForTimeout(20);
       await page.keyboard.press('Space');
+    }
+    {   // v1.5.1: all eight dots filled; the docked panel as tall as what it shows (no empty run under the pad)
+      const dt = await page.evaluate(() => { const d = document.querySelector('[data-testid="calib-dots"]'), f = document.querySelector('.layer[data-screen="calib"] > .full'), p = document.querySelector('[data-testid="calib-pad"]');
+        return { wide: document.documentElement.classList.contains('gg-wide'), docked: !!document.querySelector('.layer.calib-docked'), on: d ? d.querySelectorAll('.on').length : null, tap: d ? d.querySelectorAll('.tap').length : null,
+          gap: f && p ? Math.round(f.getBoundingClientRect().bottom - p.getBoundingClientRect().bottom) : null, H: innerHeight }; });
+      if (dt.wide && dt.docked) c.ok(dt.on === 8 && dt.tap === 8 && dt.gap > 0 && dt.gap <= 200, 'light check: 8 dots filled, panel fitted under the pad ' + JSON.stringify(dt));
+      else c.ok(dt.on == null, 'no dots outside the PC layout ' + JSON.stringify(dt));
     }
     await page.waitForFunction(() => GG.debug('calib').step === 'visualDone', null, { timeout: 5000 });
     await page.locator(tid('calib-save')).click();
@@ -686,7 +701,8 @@ async function phone() {
   const { page, errors, close } = await open();   // the phone context (390x844 unless PW_VIEW)
   const none = ids => page.evaluate(ids => ids.filter(i => document.querySelector('[data-testid="' + i + '"]')), ids);
   // v1.5 review: the unprefixed v1.5-only classes (55, 5h, 52, 50) never reach a phone's DOM
-  const V15 = '.kcap, .gig-keys, .gig-pause-keys, .gig-hint, .set-keys-chips, .set-key-chip, .set-keys-msg, .set-keys-timing, .kb-spots, .kb-hints, .calib-docked';
+  const V15 = '.kcap, .gig-keys, .gig-pause-keys, .gig-hint, .set-keys-chips, .set-key-chip, .set-keys-msg, .set-keys-timing, .kb-spots, .kb-hints, .calib-docked'
+    + ', .gig-score, .calib-dots, .kbh, .set-rail';   // v1.5.1
   const v15seen = [];
   const v15 = async where => { const n = await page.evaluate(sel => [...document.querySelectorAll(sel)].map(e => e.className), V15); if (n.length) v15seen.push(where + ': ' + n.slice(0, 3).join(' / ')); };
   try {
@@ -703,6 +719,9 @@ async function phone() {
     await page.waitForSelector(tid('calib-start'));
     left = await none(['calib-input-touch', 'calib-input-keys']);
     c.ok(!left.length, 'phone calibration: no input seg ' + left.join(' '));
+    await page.locator(tid('calib-start')).click();   // v1.5.1: the running test keeps the phone's pad (no dots)
+    await page.waitForFunction(() => GG.debug('calib').step === 'audio', null, { timeout: 5000 });
+    await v15('calib test');
     await page.evaluate(() => GG.ui.closeAll());
     await page.evaluate(() => { const s = GG.state; s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.playGig(s.gig, () => {}); });
     await waitScreen(page, 'gig-set');
@@ -744,12 +763,13 @@ async function wideGig() {
           const d = GG.debug('gigui'), hw = document.querySelector('.gig-hw'), cv = document.querySelector('[data-testid="gig-highway"]'), r = hw.getBoundingClientRect(), cr = cv.getBoundingClientRect();
           return { wide: document.documentElement.classList.contains('gg-wide'), dWide: d.wide, lanes: d.lanes, dataLanes: hw.dataset.lanes, laneW: d.laneW, gemW: d.gemW, look: d.look,
             expLook: GG.gig.DIFFICULTIES[d.diff].look / (GG.prefs.get().noteSpeed || 1), hw: { l: r.left, t: r.top, w: r.width, h: r.height }, cw: cr.width,
-            frame: window.__frames.slice(-1)[0] || null, H: innerHeight, W: innerWidth, hint: !!document.querySelector('[data-testid="gig-hint"]') };
+            frame: window.__frames.slice(-1)[0] || null, H: innerHeight, W: innerWidth, hint: !!document.querySelector('[data-testid="gig-hint"]'), score: !!document.querySelector('[data-testid="gig-score"] [data-testid="gig-hint"]') };
         });
         c.ok(g.wide && g.dWide && g.dataLanes === String(lanes), `${tag} ${lanes} lanes: PC layout, data-lanes ${g.dataLanes}`);
         c.ok(Math.abs(g.laneW - g.cw / lanes) < 0.6 && g.gemW === Math.min(g.laneW - 20, 100), `${tag} ${lanes}: laneW ${g.laneW.toFixed(1)} = width / lanes, gem ${g.gemW.toFixed(1)}`);
         c.ok(Math.abs(g.look - g.expLook) < 1e-9, `${tag} ${lanes}: note travel time ${g.look.toFixed(3)} s == the phone's`);
         c.ok(g.hint, `${tag} ${lanes}: "Esc pause" hint (gig-hint) in the PC layout`);
+        c.ok(g.score, `${tag} ${lanes}: v1.5.1 score card (gig-score) holds the hint`);
         if (g.frame) c.ok(Math.abs(g.frame.bottom - Math.round(g.H - g.hw.t - 0.1 * g.hw.h)) <= 1, `${tag} ${lanes}: stage frame to 0.1 of the highway (kit just above it) (${g.frame.bottom})`);
         if (g.hw.w < g.W * 0.9) {   // 5w (Lane W) sizes the highway: B bounds
           const lo = Math.max(lanes * 110, Math.min(0.46 * g.W, lanes * 140)) - 2, hi = Math.min(lanes * 140, Math.max(0.46 * g.W, lanes * 110)) + 2;
@@ -768,8 +788,8 @@ async function wideGig() {
         await page.waitForTimeout(100);
         await page.keyboard.press('Escape');
         await page.waitForFunction(() => !GG.debug('gigui').paused && !GG.debug('gigui').waking, null, { timeout: 5000 });
-        const r = await page.evaluate(() => { const d = GG.debug('gigui'), cv = document.querySelector('[data-testid="gig-highway"]'); return { laneW: d.laneW, cw: cv.getBoundingClientRect().width, wide: d.wide, hint: !!document.querySelector('[data-testid="gig-hint"]') }; });
-        c.ok(!r.wide && !r.hint && Math.abs(r.laneW - r.cw / 4) < 0.6 && r.cw <= 800, `resize 1440 -> 800 while paused: phone highway, laneW ${r.laneW.toFixed(1)} of ${r.cw}`);
+        const r = await page.evaluate(() => { const d = GG.debug('gigui'), cv = document.querySelector('[data-testid="gig-highway"]'); return { laneW: d.laneW, cw: cv.getBoundingClientRect().width, wide: d.wide, hint: !!document.querySelector('[data-testid="gig-hint"]'), score: !!document.querySelector('[data-testid="gig-score"]') }; });
+        c.ok(!r.wide && !r.hint && !r.score && Math.abs(r.laneW - r.cw / 4) < 0.6 && r.cw <= 800, `resize 1440 -> 800 while paused: phone highway, laneW ${r.laneW.toFixed(1)} of ${r.cw}`);
         await page.evaluate(() => GG.ui.closeAll());
       }
       c.ok(errors.length === 0, tag + ': no console errors ' + errors.slice(0, 3).join(' | '));

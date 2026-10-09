@@ -287,9 +287,17 @@
     var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
     if (!want) { if (has) has.parentNode.removeChild(has); return; }
     var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || (ui.escActs && !ui.escActs(e) ? 'Tab move · Enter pick' : HINTS);   // v1.5 review: no 'Esc close' where Esc does nothing
-    if (has && has.textContent === text) return;
+    if (has && has.getAttribute('data-text') === text) return;
     if (has) has.parentNode.removeChild(has);
-    e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
+    e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true', data: { text: text } }, hintCaps(text)));
+  }
+  // v1.5.1: 'Tab move · ←→ drum' -> [Tab] move  [←][→] drum (each part's first word is its key(s), drawn as keycaps)
+  function hintCaps(text) {
+    return String(text).split(' · ').map(function (part) {
+      var sp = part.indexOf(' '), k = sp < 0 ? part : part.slice(0, sp), rest = sp < 0 ? '' : part.slice(sp + 1);
+      var keys = /^[←→↑↓]+$/.test(k) ? k.split('') : [k];
+      return el('span.kbh', keys.map(function (x) { return el('span.kcap', x); }).concat(rest ? [' ' + rest] : []));
+    });
   }
   ui.syncHints = function () { stack.forEach(syncHints); };
   // v1.5 (package B hooks for 5w): node becomes .w2 (two columns in the PC layout only; no rule anywhere else), its first

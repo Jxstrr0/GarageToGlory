@@ -23,17 +23,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.5.0.0** "Desktop" (shipped 2026-10-08, owner check: ship; `plan/v15_integration_report.md`, review fixes
-  in its section 7) = 1.4.0.0 + keyboard play, menus on the keyboard and the PC layout (Addendum 8).
-  See "What's in v1.5". **Update Current/Next at every merge.**
+- Current: **1.5.1.0** "PC polish" (shipped 2026-10-09, owner check: ship; `plan/v151_report.md`) = 1.5.0.0 "Desktop"
+  (2026-10-08, `plan/v15_integration_report.md`: keyboard play, menus on the keyboard, the PC layout; Addendum 8) + the six
+  PC polish fixes. See "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
 - Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
-  gaps): Drum kit / Gear shop labels touch at 1280x720 with the planner open; PC gig score card; keycap legends in panel
-  footers; calibration progress dots; Settings rail follow; songwriter lane icons clipped; size +92 KB over the +60 KB soft budget.
+  gaps), all done in v1.5.1 (in review): [x] Drum kit / Gear shop labels touch at 1280x720 with the planner open; [x] PC gig
+  score card; [x] keycap legends in panel footers; [x] calibration progress dots; [x] Settings rail follow; [x] songwriter
+  lane icons clipped. Still open: size +92 KB over the +60 KB soft budget (v1.5.1 adds ~8 KB).
 - IGNORE: the owner's 2026-10-08 "engine market / buyers" message was sent to the wrong chat. It is not this game; never build it.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop.
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (+ 1.5.1 PC polish).
 - Next: owner check of 1.5 (one popup: ship / tweak; shots `scratchpad/v15_owner/`), review (3 lenses), PR to `main`. Still
   open from v1.3 (`plan/v13_integration_report.md` §8): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -139,6 +140,13 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.5.1 "PC polish" (`v1.5.1-polish`, 2026-10-09, in review; report `plan/v151_report.md`)
+- PC only (gg-desk / gg-wide; phones unchanged, pw_freeze equal): garage labels never overlap on a computer (41 `unclash`:
+  vertical nudge, eased; labelBox includes it); the PC gig score card right of the highway (points 100 a perfect / 50 a
+  good, combo, hit share + bar, "Esc pause" inside; hidden below 1000 px); footer key legends as keycaps (kb-hints, text in
+  data-text); key calibration progress dots + the docked panel fitted to its content; Settings rail follows the scroll
+  (.on + aria-current); songwriter 5 / 6-lane headers on one line in the PC layout (icons no longer clipped). VERSION 1.5.1.0.
 
 ## What's in v1.5 "Desktop" (Addendum 8; contract `plan/plan_contract_1.5.md`; lanes I, N, W + lead on `v1.5-desktop` 2026-10-08)
 - **Gig keys** (55, Lane I): physical keys (`KeyboardEvent.code`), default drums Space kick / D snare / F hats / S crash /
