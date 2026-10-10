@@ -26,6 +26,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Current: **1.5.1.0** "PC polish" (shipped 2026-10-09, owner check: ship; `plan/v151_report.md`) = 1.5.0.0 "Desktop"
   (2026-10-08, `plan/v15_integration_report.md`: keyboard play, menus on the keyboard, the PC layout; Addendum 8) + the six
   PC polish fixes. See "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
+- **1.6.0.0 "Showtime" in review** (`v1.6-showtime`, 2026-10-09; Addendum 9, report `plan/v16_report.md`): the animated gig
+  highway + Settings "Less motion". Current stays 1.5.1.0 until the lead merges (then flip Current to 1.6.0.0).
 - Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
   gaps), all done in v1.5.1 (in review): [x] Drum kit / Gear shop labels touch at 1280x720 with the planner open; [x] PC gig
   score card; [x] keycap legends in panel footers; [x] calibration progress dots; [x] Settings rail follow; [x] songwriter
@@ -140,6 +142,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.6 "Showtime" (Addendum 9; `v1.6-showtime` 2026-10-09, in review; report `plan/v16_report.md`)
+- **Highway fx** (`src/55f_ui_gigfx.js` = `GG.gigfx`, hooks in 55's draw; visuals only, every effect under the gems): hits pop
+  with sparks + a shockwave ring, Perfect a bigger flash + a lane beam; a miss cracks the gem in two at the hit line and the
+  hit line flickers red; gems glow, shine and pulse on the chart's beat (size / brightness around the centre, y untouched);
+  hold tails shimmer; the lanes scroll a faint texture at the notes' speed, lane edges + beat lines pulse, the strip lights up
+  as the combo grows; x10 / x25 / x50 heat the zone (amber, orange, white-hot) with lane flames on its top edge; x50 adds a
+  star shine (cyan sweep, rails, hit line, counter). Fixed 96-particle pool (<= 300 ms), sprites built at layout.
+- **Less motion** (Settings > Look + feel, after Reduced flashing; key `lessMotion`, default = the OS prefers-reduced-motion
+  until the player picks): calm = the 1.5 highway + the combo colour + a simple hit pop + a soft miss tint. Graphics Low and
+  the frame governor stepping down fall back to calm (latched per song). Reduced flashing: no beam / tier pop, soft miss tint.
+- Test hooks: `GG.ui.gigLiveBot` (real-time seeded bot on a 50 ms song-time grid), `GG.gigfx.force`, debug('gigfx');
+  tests `fx.test.js`, `pw_fx.js`; `tools/fx_look.js` (owner stills + clips), `tools/perf.js gig FX=full|calm`.
 
 ## What's in v1.5.1 "PC polish" (`v1.5.1-polish`, 2026-10-09, in review; report `plan/v151_report.md`)
 - PC only (gg-desk / gg-wide; phones unchanged, pw_freeze equal): garage labels never overlap on a computer (41 `unclash`:
@@ -507,6 +522,27 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
   applied (02 "As merged", stage frame 0.1, songwriter grid column), phone matrix + desktop sizes verified, owner shots
   (`plan/v15_integration_report.md`)
 - [ ] review (3 lenses) -> owner check (ship / tweak) -> PR to `main`
+
+## Addendum 9 (v1.6 "Showtime") — decisions (owner popup, 2026-10-09; LOCKED)
+- Owner: "Can we add some animation or something to the not highway and notes themselves?"
+- S1 **Juicier hits**: hits pop with a spark and a shockwave ring, Perfect gets a bigger flash; misses crack and fade away,
+  and the hit line flickers red.
+- S2 **Living notes**: notes have a soft glow and shine and pulse on the beat; long (hold) notes shimmer along their tail.
+- S3 **Moving highway**: lane edges and beat lines pulse with the music, the lanes scroll with a faint texture, and the whole
+  strip lights up as your combo grows.
+- S4 **Combo fire**: at x10, x25 and x50 the hit zone heats up through warmer colours and lane flames; a star-power-style shine
+  at the top streak (cosmetic, no score bonus).
+- S5 **Where**: phone and PC, with a Settings switch "Less motion" that turns it down (older phones, calm players).
+- Rules: visuals only (timing, judgement, scoring, chart, audio, input untouched; note y unchanged); readability first
+  (colourblind + lefty work, reducedFlash respected); calm on Low graphics / governor step-down; phone DOM unchanged except
+  the new Settings row.
+
+## Addendum 9 — pending
+- [x] build (2026-10-09, `v1.6-showtime`): 55f fx layer + 55 hooks, Less motion (10 / 11 / 5h), live bot, tests, perf, owner
+  stills + clips (`scratchpad/v16_owner/`), VERSION 1.6.0.0, 02 V1.6 block, `plan/v16_report.md`
+- [x] freeze fixtures: only the Settings screens moved (the new row); re-recorded with `tools/phone_freeze.js` (reason: the
+  owner's S5 "Less motion" row in Look + feel)
+- [ ] owner check (ship / tweak) -> review -> PR to `main` -> lead flips Current to 1.6.0.0
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
