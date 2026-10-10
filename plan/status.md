@@ -23,11 +23,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.5.1.0** "PC polish" (shipped 2026-10-09, owner check: ship; `plan/v151_report.md`) = 1.5.0.0 "Desktop"
-  (2026-10-08, `plan/v15_integration_report.md`: keyboard play, menus on the keyboard, the PC layout; Addendum 8) + the six
-  PC polish fixes. See "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
-- **1.6.0.0 "Showtime" in review** (`v1.6-showtime`, 2026-10-09; Addendum 9, report `plan/v16_report.md`): the animated gig
-  highway + Settings "Less motion". Current stays 1.5.1.0 until the lead merges (then flip Current to 1.6.0.0).
+- Current: **1.6.0.0** "Showtime" (shipped 2026-10-10, owner check: ship; Addendum 9, `plan/v16_report.md`) = 1.5.1.0 "PC
+  polish" + the animated gig highway (juicier hits, living notes, moving highway, combo fire) + Settings "Less motion".
+  See "What's in v1.6" / "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
 - Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
   gaps), all done in v1.5.1 (in review): [x] Drum kit / Gear shop labels touch at 1280x720 with the planner open; [x] PC gig
   score card; [x] keycap legends in panel footers; [x] calibration progress dots; [x] Settings rail follow; [x] songwriter
@@ -36,7 +34,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (+ 1.5.1 PC polish).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (+ 1.5.1 PC polish) · 1.6 Showtime.
 - Next: owner check of 1.5 (one popup: ship / tweak; shots `scratchpad/v15_owner/`), review (3 lenses), PR to `main`. Still
   open from v1.3 (`plan/v13_integration_report.md` §8): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -521,7 +519,7 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] lanes I, N, W (2026-10-08, reports `plan/v15_lane_<i|n|w>_report.md`) -> merged I -> N -> W on `v1.5-desktop`, hand-overs
   applied (02 "As merged", stage frame 0.1, songwriter grid column), phone matrix + desktop sizes verified, owner shots
   (`plan/v15_integration_report.md`)
-- [ ] review (3 lenses) -> owner check (ship / tweak) -> PR to `main`
+- [x] review (3 lenses) -> owner check: ship -> PR #29 to `main` (2026-10-08); 1.5.1 PC polish PR #30 (2026-10-09)
 
 ## Addendum 9 (v1.6 "Showtime") — decisions (owner popup, 2026-10-09; LOCKED)
 - Owner: "Can we add some animation or something to the not highway and notes themselves?"
@@ -542,7 +540,7 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
   stills + clips (`scratchpad/v16_owner/`), VERSION 1.6.0.0, 02 V1.6 block, `plan/v16_report.md`
 - [x] freeze fixtures: only the Settings screens moved (the new row); re-recorded with `tools/phone_freeze.js` (reason: the
   owner's S5 "Less motion" row in Look + feel)
-- [ ] owner check (ship / tweak) -> review -> PR to `main` -> lead flips Current to 1.6.0.0
+- [x] lead review (timing-safety + phone-perf) -> owner check: ship (clips + stills) -> PR to `main`, Current 1.6.0.0 (2026-10-10)
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
