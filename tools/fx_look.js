@@ -101,38 +101,44 @@ async function stills(tag, view, desk) {
     await moment(page, f('08_less_motion_x25'), "p.combo >= 27 && p.judgement === 'perfect'", 60);
   } finally { await close(); }
 }
-// Clips: Playwright's CDP screencast (Page.startScreencast) from the click on "Start the show" to a beat past x56; every
-// frame keeps its own timestamp and ffmpeg's concat demuxer plays it back at those times (recordVideo dropped time while
-// software GL kept the CPU busy: its clip ran ~1.35x fast).
+// Clips: rendered frame by frame on a virtual clock (performance.now() and the rAF timestamp step 1/30 s per frame from the
+// downbeat; the game clock free-runs on it, as it does whenever the audio clock is not trusted), one screenshot per step,
+// so the clip plays at the song's real speed with the 3D stage animating (live capture in headless software GL ran at
+// 3-6 fps and recordVideo dropped time). H.264 yuv420p faststart for an iPhone.
+const VCLOCK = () => {
+  const real = performance.now.bind(performance), raf0 = window.requestAnimationFrame.bind(window); let v = null;
+  performance.now = () => v != null ? v : real();
+  window.requestAnimationFrame = cb => raf0(ts => cb(v != null ? v : ts));
+  window.__vstart = () => { v = real(); }; window.__vstep = ms => { v += ms; };
+  window.__ticks = n => new Promise(r => { let k = 0; const f = () => (++k >= n ? r() : raf0(f)); raf0(f); });
+};
 async function clip(tag, view, desk) {
   const dir = path.join(OUT, 'raw_' + tag);
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-  const { page, context, close } = await open({ desktop: desk, viewport: view });
-  const frames = [];
+  const { page, close } = await open({ desktop: desk, viewport: view, noGoto: true });
+  let n = 0;
   try {
+    await page.addInitScript(VCLOCK);
+    await page.goto('file://' + path.join(ROOT, 'dist', 'game.html'));
     await page.waitForSelector('[data-testid="btn-new"]', { timeout: 30000 });
-    const cdp = await context.newCDPSession(page);
-    cdp.on('Page.screencastFrame', f => { frames.push([f.data, f.metadata.timestamp]); cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {}); });
-    await gig(page, { bot: { accuracy: 1, jitterMs: 25 }, bpm: 170 }, () => cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: view.width, maxHeight: view.height, everyNthFrame: 1 }));
-    const tPlay = Date.now();
-    await page.waitForFunction(() => GG.debug('gigui').combo >= 56, null, { timeout: 60000, polling: 200 });
-    console.log('clip ' + tag + ': x56 after ' + ((Date.now() - tPlay) / 1000).toFixed(1) + ' s of play');
-    await sleep(1300);
-    await cdp.send('Page.stopScreencast');
-  } finally { await context.close(); await close(); }
-  const list = [];
-  frames.forEach((f, i) => {
-    const file = path.join(dir, 'f' + String(i).padStart(4, '0') + '.jpg');
-    fs.writeFileSync(file, Buffer.from(f[0], 'base64'));
-    const next = frames[i + 1] ? frames[i + 1][1] : f[1] + 0.04;
-    list.push("file '" + file + "'", 'duration ' + Math.max(0.001, next - f[1]).toFixed(4));
-  });
-  list.push("file '" + path.join(dir, 'f' + String(frames.length - 1).padStart(4, '0') + '.jpg') + "'");
-  fs.writeFileSync(path.join(dir, 'list.txt'), list.join('\n') + '\n');
-  const out = path.join(OUT, '09_clip_to_x50_' + tag + '.mp4'), secs = frames.length ? frames[frames.length - 1][1] - frames[0][1] : 0;
-  execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'), '-vf', 'fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-crf', '22', out]);
-  console.log('clip ' + path.basename(out) + ' (' + secs.toFixed(1) + ' s, ' + frames.length + ' frames, ' + (frames.length / Math.max(0.1, secs)).toFixed(1) + ' fps captured)');
+    process.env.STAGE = '1';
+    await gig(page, { bot: { accuracy: 1, jitterMs: 25 }, bpm: 170 });
+    delete process.env.STAGE;
+    await page.evaluate(() => { window.__vstart(); return window.__ticks(3); });
+    let after = -1;
+    while (n < 300) {
+      await page.evaluate(() => { window.__vstep(1000 / 30); return window.__ticks(2); });
+      await page.screenshot({ path: path.join(dir, 'f' + String(n).padStart(4, '0') + '.jpg'), type: 'jpeg', quality: 92 });
+      n++;
+      const c = await page.evaluate(() => GG.debug('gigui').combo);
+      if (after < 0 && c >= 55) after = n;
+      if (after >= 0 && n - after >= 70) break;
+    }
+  } finally { await close(); }
+  const out = path.join(OUT, '09_clip_to_x50_' + tag + '.mp4');
+  execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-framerate', '30', '-i', path.join(dir, 'f%04d.jpg'), '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-crf', '21', out]);
+  console.log('clip ' + path.basename(out) + ' (' + (n / 30).toFixed(1) + ' s, ' + n + ' frames)');
 }
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
