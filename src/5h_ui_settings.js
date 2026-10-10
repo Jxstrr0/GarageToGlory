@@ -321,6 +321,8 @@
       })));
       body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
       body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
+      // v1.6 "Showtime": the calm gig highway (default: the device's own reduced-motion setting)
+      body.appendChild(toggle(s, 'lessMotion', 'Less motion', 'A calm gig highway: no sparks, flames or scrolling. Good for older phones.'));
       body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
       body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
       body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));

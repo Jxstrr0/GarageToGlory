@@ -16,7 +16,8 @@
   // mix / metronome / brushes default inside GG.audio. Only keys the player changed are stored.
   var DEFAULT_SETTINGS = { muted: false, gigDifficulty: 'easy', noteSpeed: 1, noFail: false, autoKick: false,
     audioProfile: 'speaker', calib: { speaker: { audio: 0, visual: 0, at: 0 }, headphones: { audio: 0, visual: 0, at: 0 } }, calibSeen: false,
-    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'auto', skipVan: false, fastAnim: false };
+    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'auto', skipVan: false, fastAnim: false,
+    lessMotion: null };   // v1.6: null = follow the OS (prefers-reduced-motion; GG.prefs.normalize -> a boolean) until the player picks
   // v1.0 (§0 Q8): graphics defaults to 'auto' (adaptive pixel ratio; P.normalize maps it to 'high' until 'auto' is in P.GRAPHICS).
 
   /* ---- Storage backend ---------------------------------------------------- */

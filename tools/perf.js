@@ -4,7 +4,7 @@
 // the last scene; Web Audio: every created node, every source's [start, end] on the context clock; long tasks).
 //   node tools/perf.js [all|scenes|governor|gig|tti|audio|stalls|size|report]   (default: all)
 //   env: VIEW=390x844, DPR=1, THROTTLE (scenes/gig: one rate; all: 1 and 4), SAMPLE=4000 (ms per scene), SONG_S=40, KITQ (gig: kit tier),
-//        TRIALS=3 (tti), OUT=tests/.cache/perf_v10.txt
+//        TRIALS=3 (tti), OUT=tests/.cache/perf_v10.txt, FX=full|calm (gig, v1.6: pins the highway fx; the debug('gigfx') draw ms is logged)
 // Results: tests/.cache/perf/<what>.json; `all` and `report` write OUT: the v1.0 table against plan/perf_baseline_v10.txt
 // (contract §4.9: hard gates = draw calls, triangles, audio nodes per hit / per second, the voice cap, governor mode/cap per
 // scene; report-only = JS/frame, render() time, quickStart, first builds, heap, TTI).
@@ -268,13 +268,15 @@ async function gig(T) {
   T = T || +(process.env.THROTTLE || 1);
   const SONG_S = +(process.env.SONG_S || 40), BAND = process.env.BAND || 'hail_damage', VENUE = process.env.VENUE || 'mudstonbury_fest', DIFF = process.env.DIFF || 'expert';
   const KITQ = process.env.KITQ != null && process.env.KITQ !== '' ? +process.env.KITQ : null;   // v1.2: the kit tier (3 = arena: the sampled kit on metal)
-  const res = { throttle: T, band: BAND, venue: VENUE, diff: DIFF, view: VIEW, kitq: KITQ };
+  const FX = process.env.FX || null;   // v1.6: FX=full|calm pins the highway fx (GG.gigfx.force); unset = the game's own level
+  const res = { throttle: T, band: BAND, venue: VENUE, diff: DIFF, view: VIEW, kitq: KITQ, fx: FX };
   const { page, cdp, errors, close } = await open({ throttle: T });
   try {
     await page.waitForSelector('[data-testid="btn-new"]', { timeout: 60000 });
     await page.mouse.click(VW / 2, VH / 2);   // a real first touch: the audio unlock (the crowd warms up from here)
-    res.setup = await page.evaluate(([band, venue, diff, kitq]) => {
+    res.setup = await page.evaluate(([band, venue, diff, kitq, fx]) => {
       GG.prefs.set({ gigDifficulty: diff, calibSeen: true });
+      if (fx && GG.gigfx) GG.gigfx.force = fx;
       GG.main.quickStart({ seed: 5150, openCard: false, bandId: band });
       const s = GG.state; s.card = null; s.phase = 'plan'; s.fund = 99999; s.fans = 60000; s.buzz = 90;
       ['toms', 'ride', 'pedal'].forEach(id => { try { GG.shop.buyGear(s, id); } catch (e) {} });
@@ -286,7 +288,7 @@ async function gig(T) {
       window.__done = null; GG.ui.gigAutoplay = false;
       GG.ui.playGig(s.gig, r => { window.__done = r; });
       return { lanes: s.gear.lanes, dk: s.gear.doubleKick, gig: s.gig && s.gig.name, cap: s.gig && s.gig.capacity, members: s.members.length, quality: s.gear.quality };
-    }, [BAND, VENUE, DIFF, KITQ]);
+    }, [BAND, VENUE, DIFF, KITQ, FX]);
     await page.waitForFunction(() => GG.debug('ui').screen === 'gig-set', null, { timeout: 60000 });
     await page.waitForFunction(() => GG.debug('audio').crowd.ready, null, { timeout: 60000 }).catch(() => {});
     await page.locator('[data-testid="btn-gig-start"]').last().click();
@@ -324,6 +326,7 @@ async function gig(T) {
       if (m !== 'play' && m !== 'between') { res.endedEarly = m; break; }
     }
     res.frame = await page.evaluate(() => __perf.read());
+    res.gigfx = await page.evaluate(() => { try { const d = GG.debug('gigfx'); return d && d.drawMs ? { level: d.level, why: d.why, drawMs: d.drawMs, peak: d.particles.peak } : null; } catch (e) { return null; } });   // v1.6
     res.mid = mid;
     res.heap = await heap(cdp);
     res.audio = await page.evaluate(() => {
@@ -340,6 +343,7 @@ async function gig(T) {
     const f = res.frame, a = res.audio;
     console.log('gig x' + T, BAND, VENUE, DIFF, JSON.stringify(res.setup));
     console.log('  raf fps', f.fps, 'rendered/s', f.renderFps, 'frame p50/p95', f.frame.p50 + '/' + f.frame.p95, 'js p50/p95/max', f.js.p50 + '/' + f.js.p95 + '/' + f.js.max, 'render p50/p95', f.render.p50 + '/' + f.render.p95);
+    if (res.gigfx) console.log('  highway fx', JSON.stringify(res.gigfx));
     console.log('  mid', JSON.stringify(mid && { calls: mid.info.calls, tris: mid.info.tris, perf: mid.perf, stage: mid.stage }), 'heap', JSON.stringify(res.heap));
     console.log('  audio peak', JSON.stringify(a.peak), 'caps', JSON.stringify(a.caps), 'nodes/s', a.nodesPerSec, '(drum hits ' + a.hitNodesPerSec + ' from ' + a.hitsPerSec + ' hits/s)', 'taps', a.taps, JSON.stringify(a.judged));
     console.log('  created', JSON.stringify(a.created), 'drops', a.counts.dropped - (a.drops0.dropped || 0), 'tapDrops', a.counts.tapDrops - (a.drops0.tapDrops || 0), 'global', JSON.stringify(a.global));

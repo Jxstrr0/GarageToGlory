@@ -6,6 +6,8 @@
 //   Settings keys (GG.save.settings()): gigDifficulty, noteSpeed, noFail, autoKick, audioProfile, calib { speaker|headphones:
 //     { audio, visual, at } }, calibSeen, lefty, colourblind, bigText, reducedFlash, cameraShake, graphics, skipVan,
 //     fastAnim, songwriterMode ('guided'|'advanced', v0.6.2) (+ lane A's mix, metronome, brushes; muted),
+//     lessMotion (v1.6 "Showtime": the calm gig highway; default null = follow the OS prefers-reduced-motion, normalized to a
+//     boolean by P.osLessMotion(); stored only once the player flips it),
 //     drumSync (v0.8.3, default true), syncDisp (v0.8.3, ms 10..40: this device's touch dispatch p90, default 25),
 //     audioClassic (v1.2, default false: the 1.1 sound; hidden, debug-only via GG.audio.classic(bool), owner F16.4).
 //     calib profiles also keep vat (v0.8.3: when the light check last wrote `visual`; 0 = never measured).
@@ -54,11 +56,18 @@
     if (!C.GIG_DIFFICULTY || C.GIG_DIFFICULTY.indexOf(s.gigDifficulty) < 0) s.gigDifficulty = 'easy';
     ['noFail', 'autoKick', 'calibSeen', 'lefty', 'colourblind', 'bigText', 'reducedFlash', 'skipVan', 'fastAnim'].forEach(function (k) { s[k] = !!s[k]; });
     s.cameraShake = s.cameraShake !== false;
+    s.lessMotion = typeof s.lessMotion === 'boolean' ? s.lessMotion : P.osLessMotion();   // v1.6: unset = the OS's reduced motion
     s.drumSync = s.drumSync !== false;                                // v0.8.3: default on
     s.syncDisp = U.clamp(Math.round(num(s.syncDisp, 25)), 10, 40);   // v0.8.3: ms, this device's touch dispatch p90
     s.audioClassic = !!s.audioClassic;                                // v1.2: the Classic sound (hidden; GG.audio.classic)
     if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2 Write flow mode; ignored since 1.3 (one flow, D18): kept so old saves / tests round-trip
     return s;
+  };
+  // v1.6 "Showtime": the OS asks for reduced motion (matchMedia; node / no matchMedia -> false). Read when a setting is
+  // normalized, never stored: the player's own pick (true / false) wins from then on.
+  P.osLessMotion = function () {
+    try { var w = typeof window !== 'undefined' ? window : null; return !!(w && typeof w.matchMedia === 'function' && w.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+    catch (e) { return false; }
   };
   P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };
   P.set = function (o) {
