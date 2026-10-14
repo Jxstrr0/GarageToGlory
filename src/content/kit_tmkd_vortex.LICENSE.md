@@ -13,6 +13,6 @@ The pack's terms, transcribed from The Metal Kick Drum's free-pack notice (owner
 What this means for Garage to Glory:
 - Sharing is allowed: the encoded kit ships in this repo, in `dist/` and in every build.
 - Credit is mandatory: "Drum samples: "Vortex" free pack by The Metal Kick Drum, recorded & processed by Rafa Prieto
-  (© 2019)" appears on the title screen and in the README. Nothing may present these drums as Prairie Blue Studio's own.
+  (© 2019)" appears on the title screen and in the README. Nothing may present these drums as Longlight Interactive's own.
 - Never sold: Garage to Glory is free. Before it is ever sold or monetized (a price, ads, in-app purchases), this kit must be
   replaced or The Metal Kick Drum's written permission obtained.

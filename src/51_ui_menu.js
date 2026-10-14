@@ -161,7 +161,7 @@
             is3d ? el('div.title-hint', { testid: 'title-hint' }, ui.tapWords ? ui.tapWords('Psst: tap the kit. Or Marcel.') : 'Psst: tap the kit. Or Marcel.') : null,
             el('div.menu-list', kids),
             el('div.credits', [
-              el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION),
+              el('p.credit', { testid: 'title-credit' }, 'a game by Longlight Interactive · V' + GG.VERSION),
               // v1.2 (handoff F17.2, mandatory): every sample kit in the build is credited on the title screen
               kitCredits().length ? el('p.credit.kit-credit', { testid: 'title-kit-credit' }, kitCredits().join(' · ')) : null
             ])

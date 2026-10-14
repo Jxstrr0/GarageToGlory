@@ -1,6 +1,6 @@
 # Garage to Glory
 
-A comedic band-career game by **Prairie Blue Studio**. You're the drummer who started the band: steer it through a
+A comedic band-career game by **Longlight Interactive**. You're the drummer who started the band: steer it through a
 ten-year career from your parents' garage in Saskatoon to arenas around the world (or a breakup in a parking lot).
 Phone-first, portrait, low-poly 3D, rhythm-game gigs.
 
@@ -11,7 +11,7 @@ Phone-first, portrait, low-poly 3D, rhythm-game gigs.
 - Design + roadmap: `plan/handoff.md` · Current status: `plan/status.md`
 
 ## Credits
-- Game, code, art and synthesized audio: Prairie Blue Studio.
+- Game, code, art and synthesized audio: Longlight Interactive.
 - Drum samples: "Vortex" free pack by The Metal Kick Drum, recorded & processed by Rafa Prieto (© 2019)
   (metal kick, snare and toms at the pro and arena kit tiers). Free to share, credit required, not for sale: see
   `src/content/kit_tmkd_vortex.LICENSE.md`. Garage to Glory is free; before it is ever sold or monetized, this kit is
