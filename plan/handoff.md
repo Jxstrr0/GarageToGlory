@@ -1,6 +1,6 @@
 # Garage to Glory — Design Doc + Claude Code Build Handoff
 
-A game by Prairie Blue Studio. Drop this file into the Claude Code session and say "read the handoff and start v0.1".
+A game by Longlight Interactive. Drop this file into the Claude Code session and say "read the handoff and start v0.1".
 Written Monday, September 28, 2026. Two parts: Part A is the design (source of truth), Part B is the build handoff.
 
 ---
@@ -226,7 +226,7 @@ GarageToGlory/
 - One global namespace `window.GG` and an event bus (`GG.on`, `GG.emit`).
 - Sims are fixed-step and never touch the DOM (the career sim is turn-based per week; the gig sim advances at 20 Hz in tests with fake input timestamps). Render, UI and audio only read sim state and listen to bus events.
 - Every module exposes `debug()` getters so tests assert state instead of taking screenshots.
-- Version stamps: `<title>` "Garage to Glory - V0.1.0.0", `GG.VERSION`, and the menu credit "a game by Prairie Blue Studio".
+- Version stamps: `<title>` "Garage to Glory - V0.1.0.0", `GG.VERSION`, and the menu credit "a game by Longlight Interactive".
 
 ## B4. Version roadmap (build in this order; each version is playable on a phone before moving on)
 Each version: bump VERSION, run the affected tests, build, commit, push, update `plan/status.md`, then one short plain-words summary to the owner (no step recap) and a popup for the next decision if one is due.
@@ -1073,7 +1073,7 @@ What that means for the build (the rules Lane I and the lead follow):
 - **Sharing is fine:** the encoded kit is committed (`src/content/kit_tmkd_vortex.js`), goes into `dist/`, the public repo and the main
   artifact.
 - **Never take credit:** the credit line is mandatory wherever the kit ships (the title credit + the LICENSE file next to the kit + the
-  README). Nothing may present the drums as Prairie Blue Studio's own.
+  README). Nothing may present the drums as Longlight Interactive's own.
 - **Never sell:** Garage to Glory is free. **If it ever becomes paid or monetized (price, ads, in-app purchases), this kit
   must be replaced or TMKD's written permission obtained first.** Logged in status.md as a standing rule.
 - The raw 34 MB of WAVs stay out of git (size, not licence): `local/` is git-ignored and holds the unzipped source; only the

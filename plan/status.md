@@ -23,7 +23,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.6.0.0** "Showtime" (shipped 2026-10-10, owner check: ship; Addendum 9, `plan/v16_report.md`) = 1.5.1.0 "PC
+- Current: **1.6.0.1** = 1.6.0.0 + studio renamed to **Longlight Interactive** (title credit, boot screen, README, kit
+  licence note; owner request 2026-10-14). 1.6.0.0 "Showtime" (shipped 2026-10-10, owner check: ship; Addendum 9, `plan/v16_report.md`) = 1.5.1.0 "PC
   polish" + the animated gig highway (juicier hits, living notes, moving highway, combo fire) + Settings "Less motion".
   See "What's in v1.6" / "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
 - Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
