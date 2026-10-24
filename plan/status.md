@@ -42,7 +42,7 @@ works) and `DESIGN.md` (the game as built). This file keeps the version history,
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (PR #29, + 1.5.1 PC polish PR #30) · 1.6 Showtime (PR #31) · studio rename (PR #32).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted).
-  Live on GitHub Pages from `main` (root): https://jxstrr0.github.io/GarageToGlory/ (no Actions workflow; dist/ is committed).
+  Live on GitHub Pages from `main` (root): https://jxstrr0.github.io/GarageToGlory/ (dist/ is committed; the CI workflow is the PR check: build, dist drift check, node tests).
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
 ## Token budget rules (owner 2026-10-02: "less token burn")
