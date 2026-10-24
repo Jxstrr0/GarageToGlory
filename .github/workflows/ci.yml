@@ -1,0 +1,31 @@
+# The PR check, the same shape as the other Longlight games: rebuild, make sure
+# the committed dist/ matches src/, then run the node test suite. Pages still
+# serves main's root (dist/ is committed), so this workflow does not deploy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: node build.js
+      - name: dist/ matches src/
+        run: |
+          if ! git diff --quiet -- dist index.html; then
+            echo "::error file=dist/game.html::dist/ is out of date with src/. Run 'node build.js' and commit dist/."
+            git diff --stat -- dist index.html
+            exit 1
+          fi
+      - name: Node tests
+        run: node tests/run.js

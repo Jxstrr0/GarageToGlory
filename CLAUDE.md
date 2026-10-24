@@ -47,7 +47,9 @@ three.js in `tests/.cache/` (gitignored) and fails a check on any console error.
   (`tests/build.test.js` checks the stripper). The build is deterministic: running it on a clean tree
   changes nothing in `dist/`.
 - `dist/` is committed. Deploy is GitHub Pages serving the `main` branch from the repo root
-  (`.nojekyll`, root `index.html` redirects to `dist/game.html`). There is no GitHub Actions workflow.
+  (`.nojekyll`, root `index.html` redirects to `dist/game.html`). The **CI** workflow (`.github/workflows/ci.yml`) is the PR check:
+  on every PR and push to `main` it runs `node build.js`, fails if the committed `dist/` differs
+  from a fresh build, then runs `node tests/run.js`. It does not deploy.
   Live: https://jxstrr0.github.io/GarageToGlory/ (repo https://github.com/Jxstrr0/GarageToGlory).
   Merging into `main` is the deploy.
 
@@ -103,8 +105,8 @@ three.js in `tests/.cache/` (gitignored) and fails a check on any console error.
   every change in plain language at the end of a task, with how to test it on the live site.
 - Phone first, portrait. Everything must work with touch. Keyboard and the PC layout are extras.
 - Work on a branch, open a pull request into `main`. Kelbo has given standing permission to merge
-  once `node tests/run.js` passes, the build is clean and the Playwright sections the change touches
-  are green (there is no GitHub Actions check in this repo; if one is added, it must be green too).
+  once the **CI** check on the PR is green (build clean, `dist/` committed and current, node tests
+  pass) and the Playwright sections the change touches pass locally (CI does not run Playwright).
   Delete the branch after merging.
 - Ask with a short popup (2 to 4 options, recommended first) when a real design choice comes up.
   Record the answer in `plan/status.md`. Never re-pitch a locked decision.
