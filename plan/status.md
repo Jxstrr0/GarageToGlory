@@ -1,6 +1,8 @@
 # Garage to Glory: status
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
+Quick start for a fresh session: `CLAUDE.md` at the repo root (stack, commands, conventions, how the owner
+works) and `DESIGN.md` (the game as built). This file keeps the version history, decisions and open items.
 
 ## v1.1 owner answers (2026-10-03, LOCKED)
 - String-seat average-bot balance (~+7–8% over drums, inside seed noise): **leave it**; re-check with paired seeds in 1.2 Tuning.
@@ -23,26 +25,30 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.6.0.0** "Showtime" (shipped 2026-10-10, owner check: ship; Addendum 9, `plan/v16_report.md`) = 1.5.1.0 "PC
-  polish" + the animated gig highway (juicier hits, living notes, moving highway, combo fire) + Settings "Less motion".
+- Current: **1.6.0.0** "Showtime" (shipped 2026-10-10 via PR #31, owner check: ship; Addendum 9, `plan/v16_report.md`) = 1.5.1.0
+  "PC polish" + the animated gig highway (juicier hits, living notes, moving highway, combo fire) + Settings "Less motion".
   See "What's in v1.6" / "What's in v1.5.1" / "What's in v1.5". **Update Current/Next at every merge.**
-- Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small patches. v1.5 PC polish list (report section 7
-  gaps), all done in v1.5.1 (in review): [x] Drum kit / Gear shop labels touch at 1280x720 with the planner open; [x] PC gig
-  score card; [x] keycap legends in panel footers; [x] calibration progress dots; [x] Settings rail follow; [x] songwriter
-  lane icons clipped. Still open: size +92 KB over the +60 KB soft budget (v1.5.1 adds ~8 KB).
+  After it on `main`: PR #32 (2026-10-14) renamed the studio to Longlight Interactive everywhere (no VERSION bump); the
+  docs refresh of 2026-10-24 added `CLAUDE.md` and `DESIGN.md` at the root (docs only).
+- Next: the owner playtest per D5 (years 1-3 on drums, then 3-6) -> small v1.4.x-style patches; nothing reported yet.
+  The v1.5 PC polish list (report section 7 gaps) all shipped in v1.5.1: [x] Drum kit / Gear shop labels touch at 1280x720
+  with the planner open; [x] PC gig score card; [x] keycap legends in panel footers; [x] calibration progress dots;
+  [x] Settings rail follow; [x] songwriter lane icons clipped. Still open: size +92 KB over the +60 KB soft budget
+  (v1.5.1 added ~8 KB, v1.6 ~25 KB; dist/game.html 5,378,879 B, hard gate 6,000,000 B). Still open from v1.3
+  (`plan/v13_integration_report.md` §8): per-chord thirds, slider-song career balance.
 - IGNORE: the owner's 2026-10-08 "engine market / buyers" message was sent to the wrong chat. It is not this game; never build it.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (+ 1.5.1 PC polish) · 1.6 Showtime.
-- Next: owner check of 1.5 (one popup: ship / tweak; shots `scratchpad/v15_owner/`), review (3 lenses), PR to `main`. Still
-  open from v1.3 (`plan/v13_integration_report.md` §8): per-chord thirds, slider-song career balance.
-- Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26) · 1.5 Desktop (PR #29, + 1.5.1 PC polish PR #30) · 1.6 Showtime (PR #31) · studio rename (PR #32).
+- Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted).
+  Live on GitHub Pages from `main` (root): https://jxstrr0.github.io/GarageToGlory/ (no Actions workflow; dist/ is committed).
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
 ## Token budget rules (owner 2026-10-02: "less token burn")
-- **This file is the only must-read.** Keep it lean: history ("What's in v0.x", old hotfixes, Addendum 1/2 decisions + done
-  checklists, v0.9 owner decisions) lives in `plan/status_archive.md`; read it only for a specific old detail (grep it).
+- **This file is the only must-read** (besides `CLAUDE.md`, which Claude Code loads on its own). Keep it lean: history
+  ("What's in v0.x", old hotfixes, Addendum 1/2 decisions + done checklists, v0.9 owner decisions) lives in
+  `plan/status_archive.md`; read it only for a specific old detail (grep it).
 - Never read `plan/handoff.md` whole: grep/read only the Part or section the task names (e.g. Part E for Seats).
 - Contracts: read only your lane's section plus §0 and §4. Lane reports and audits go to files; prompts point at file paths,
   never paste them.
@@ -141,7 +147,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
-## What's in v1.6 "Showtime" (Addendum 9; `v1.6-showtime` 2026-10-09, in review; report `plan/v16_report.md`)
+## What's in v1.6 "Showtime" (Addendum 9; `v1.6-showtime` 2026-10-09, shipped 2026-10-10 PR #31; report `plan/v16_report.md`)
 - **Highway fx** (`src/55f_ui_gigfx.js` = `GG.gigfx`, hooks in 55's draw; visuals only, every effect under the gems): hits pop
   with sparks + a shockwave ring, Perfect a bigger flash + a lane beam; a miss cracks the gem in two at the hit line and the
   hit line flickers red; gems glow, shine and pulse on the chart's beat (size / brightness around the centre, y untouched);
@@ -154,7 +160,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Test hooks: `GG.ui.gigLiveBot` (real-time seeded bot on a 50 ms song-time grid), `GG.gigfx.force`, debug('gigfx');
   tests `fx.test.js`, `pw_fx.js`; `tools/fx_look.js` (owner stills + clips), `tools/perf.js gig FX=full|calm`.
 
-## What's in v1.5.1 "PC polish" (`v1.5.1-polish`, 2026-10-09, in review; report `plan/v151_report.md`)
+## What's in v1.5.1 "PC polish" (`v1.5.1-polish`, 2026-10-09, shipped PR #30; report `plan/v151_report.md`)
 - PC only (gg-desk / gg-wide; phones unchanged, pw_freeze equal): garage labels never overlap on a computer (41 `unclash`:
   vertical nudge, eased; labelBox includes it); the PC gig score card right of the highway (points 100 a perfect / 50 a
   good, combo, hit share + bar, "Esc pause" inside; hidden below 1000 px); footer key legends as keycaps (kb-hints, text in
@@ -545,8 +551,8 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
 - Build: `node build.js` → dist/. ORDER rule: 01_ns, 02_contracts, content/*.js, then other src/*.js by name.
-- Tests: `node tests/run.js` (all node tests). Playwright: `timeout 500 node tests/pw_flow.js` with `META_ONLY=<section>`; helper `tests/_pw.js` routes three.js to `tests/.cache/` (gitignored) and runs at 390×844.
-- Balance: `node tools/balance.js`.
+- Tests: `node tests/run.js` (all node tests, 39 files, ~6.5 min). Playwright: `timeout 500 node tests/pw_flow.js` with `META_ONLY=<section>`; helper `tests/_pw.js` routes three.js to `tests/.cache/` (gitignored) and runs at 390×844 (`PW_VIEW=440x956` for the owner's phone).
+- Balance: `node tools/balance.js`. Full command list and conventions: `CLAUDE.md`; the game as built: `DESIGN.md`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
 - **v1.5 as merged** (lanes I -> N -> W + lead, 2026-10-08; full list in `02_contracts.js` V1.5 DESKTOP + "As merged"):

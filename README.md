@@ -4,11 +4,14 @@ A comedic band-career game by **Longlight Interactive**. You're the drummer who 
 ten-year career from your parents' garage in Saskatoon to arenas around the world (or a breakup in a parking lot).
 Phone-first, portrait, low-poly 3D, rhythm-game gigs.
 
-- Play: open `dist/game.html` in a browser (one self-contained file; three.js loads from cdnjs).
-- Build: `node build.js` (concatenates `src/` into `dist/`).
-- Test: `node tests/run.js` · Playwright: `META_ONLY=flow timeout 500 node tests/pw_flow.js`
-- Balance probe: `node tools/balance.js`
-- Design + roadmap: `plan/handoff.md` · Current status: `plan/status.md`
+- Play: https://jxstrr0.github.io/GarageToGlory/ (GitHub Pages serves `main`), or open `dist/game.html` in a browser
+  (one self-contained file; three.js 0.149.0 loads from cdnjs). Version: `VERSION` (currently 1.6.0.0).
+- Build: `node build.js` (concatenates `src/` into `dist/`; `dist/` is committed).
+- Test: `node tests/run.js` (all node tests) · Playwright: `META_ONLY=flow timeout 500 node tests/pw_flow.js`
+  (one section of one `tests/pw_*.js`; `PW_VIEW=440x956` for the owner's phone size)
+- Balance probe: `node tools/balance.js [years] [seeds]`
+- For Claude Code sessions: `CLAUDE.md` (how to work here) · `DESIGN.md` (the game as built) ·
+  `plan/status.md` (version history, decisions, open items) · `plan/handoff.md` (the original design doc and addenda)
 
 ## Credits
 - Game, code, art and synthesized audio: Longlight Interactive.

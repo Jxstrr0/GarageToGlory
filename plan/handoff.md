@@ -3,6 +3,13 @@
 A game by Longlight Interactive. Drop this file into the Claude Code session and say "read the handoff and start v0.1".
 Written Monday, September 28, 2026. Two parts: Part A is the design (source of truth), Part B is the build handoff.
 
+> **Status note (2026-10-24).** Every version in the B4 roadmap (v0.1 to v1.0) and the addenda below (Parts C to F,
+> v1.1 Seats, v1.2 Soundcheck, v1.3 Songwriter, v1.4 Tuning, v1.5 Desktop, v1.6 Showtime) has shipped; the live build is
+> 1.6.0.0. This file is kept as the original design and its addenda. For what is actually built read `DESIGN.md` at
+> the repo root; for how to work in the repo read `CLAUDE.md`; for the version history, decisions and open items read
+> `plan/status.md`. Where this file and the code differ, the code and `plan/status.md` win. B7 (first-session setup)
+> and B8 are done and no longer apply. Never read this file whole: grep the Part or section a task names.
+
 ---
 
 # PART A — DESIGN DOC
